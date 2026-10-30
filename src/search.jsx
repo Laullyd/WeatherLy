@@ -1,0 +1,414 @@
+import { useNavigate } from "react-router";
+import { useState, useEffect } from 'react'
+
+let locationList;
+let selectedLocation;
+let loactionReqController;
+let weatherReqController;
+let weatherData;
+function resetStatesToWelcome(searchStateSetter, statusStateSetter, loadingStatusStateSetter) {
+  searchStateSetter('not-searched');
+  statusStateSetter('loading');
+  loadingStatusStateSetter('locations-loading');
+}
+function resetStatesToLocations(statusStateSetter) {
+  statusStateSetter('locations-gotten');
+}
+function abortLoactionsFetch() {
+  loactionReqController.abort('Request cancelled by user');
+  console.log('Request Aborted!');
+}
+function abortWeatherFetch() {
+  weatherReqController.abort('Request cancelled by user');
+  console.log('Request Aborted!');
+}
+function validateInput(event, setValidationState) {
+  const input = event.target;
+  if (!input.value) {
+    setValidationState(true);
+    console.log('No input');
+    return;
+  }
+  if (/[./?|!$#@*&^%"'+_=}{:;)(]/.test(input.value)) {
+    setValidationState(false);
+  } else {
+    setValidationState(true);
+  }
+}
+function startSearch(e) {
+  const input = document.getElementById('city-input');
+  const searchBtn = document.querySelector('#search-btn');
+  if (!input.value || e.key !== 'Enter') {
+    return;
+  }
+  searchBtn.click();
+}
+function search(validState, searchedState, searchStateSetter) {
+  const cityField = document.getElementById('city-input');
+  const cityInput = cityField.value.trim();
+  const params = new URLSearchParams(`name=${cityInput}&count=100`);
+  const url = 'https://geocoding-api.open-meteo.com/v1/search?';
+  if (!cityInput) {
+    return Promise.resolve({ status: 'skipped' });
+  }
+  if (searchedState !== 'not-searched') {
+    return Promise.resolve({ status: 'skipped' });
+  }
+  if (!validState) {
+    console.log('Inputed symbols are not allowed!');
+    return Promise.resolve({ status: 'skipped' });
+  }
+  searchStateSetter('searched');
+  loactionReqController = new AbortController();
+  return fetch(`${url}${params}`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/JSON'
+    },
+    signal: loactionReqController.signal
+  })
+  .then(response => {
+    if (!response.ok) {
+      return { 
+        status: 'HTTP error',
+        reason: response.statusText
+      };
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data.error) {
+      return { 
+        status: 'App error',
+        reason: data.reason
+      };
+    } else if (!data.results) {
+      return { status: 'Location not found' };
+    }
+    locationList = data.results;
+    console.log(locationList);
+    return {
+      status: 'success',
+      result: locationList
+    }
+  })
+  .catch(error => {
+    console.error(error.message);
+    if (error.message === 'Failed to fetch') {
+      return { status: 'network-connection-error' };
+    } else {
+      return { status: 'error-getting-locations' };
+    }
+  });
+}
+function WelcomeInterface({ searchStateSetter, statusStateSetter, searchedState }) {
+  const [validState, setValidationState] = useState(true);
+  const currentHour = new Date().getHours();
+  let timeOfTheDay = '';
+  let todIcon = '';
+  if (currentHour >= 0 && currentHour < 12) {
+    timeOfTheDay = ' morning!';
+    todIcon = <i className="fa-solid fa-cloud-sun greeting-icon day"></i>;
+  } else if (currentHour >= 12 && currentHour < 16) {
+    timeOfTheDay = ' afternoon!';
+    todIcon = <i className="fa-solid fa-sun greeting-icon day"></i>;
+  } else  if (currentHour >= 16 && currentHour < 20){
+    timeOfTheDay = ' evening!';
+    todIcon = <i className="fa-solid fa-cloud-moon greeting-icon night"></i>;
+  } else {
+    timeOfTheDay = ' evening!';
+    todIcon = <i className="fa-solid fa-moon greeting-icon night"></i>;
+  }
+  function handleSearchAndAfter(statusStateSetter) {
+    search(validState, searchedState, searchStateSetter)
+    .then(outcome => {
+      if (outcome.status === 'skipped') return;
+      updateStates(outcome, statusStateSetter);
+    })
+    // Other ways are...
+    /* 
+    1. if (outcome === undefined) return;... or execute if outcome !== undefined
+    2. if (!outcome instanceOf Promise) return;... or execute if outcome instanceOf Promise
+    */
+  }
+  return (
+    <>
+      <div id='greeting'>Hey there! A lovely<span id='time-of-day'><b>{timeOfTheDay}</b></span> <span id='tod-icon'></span>{todIcon}</div>
+      <div id="welcome-cont">
+        <h1 id="welcome-heading"><i className="fa-solid fa-cloud-rain heading-icon dark"></i><i className="fa-solid fa-sun heading-icon light"></i>WeatherLy</h1>
+        <h4 id="welcome-sub">What's The Weather Like?</h4>
+        <SearchCont validStateSetter={setValidationState} validateInput={validateInput} startSearch={startSearch} handleSearchAndAfter={() => handleSearchAndAfter(statusStateSetter)} />
+        {!validState && <small id='input-caveat'><b>Only commas are allowed!</b></small>}
+        <p id='last-statement'>Planning your day or just curious? <br /> See what's happening outside and get a glimpse of the days ahead.</p>
+      </div>
+    </>
+  )
+}
+function updateStates(outcome, statusStateSetter) {
+  switch (outcome.status) {
+    case 'success': 
+      statusStateSetter('locations-gotten');
+      break;
+    case 'HTTP error': 
+      console.log(outcome.reason);
+      statusStateSetter(outcome.reason);
+      throw new Error(outcome.reason)
+    case 'App error': 
+      console.log(outcome.reason);
+      statusStateSetter(outcome.reason);
+      throw new Error(outcome.reason)
+    case 'Location not found': 
+      statusStateSetter('locations-not-found');
+      break;
+    case 'network-connection-error': 
+      statusStateSetter('network-connection-error');
+      break;
+    case 'error-getting-locations': 
+      statusStateSetter('error-getting-locations');
+      break;
+  }
+}
+function SearchCont({ validStateSetter, validateInput, startSearch, handleSearchAndAfter }) {
+  return  (
+    <div id="search-cont">
+      <input id="city-input" type="text" placeholder="Enter City Name..." onKeyDown={startSearch} onInput={((event) => validateInput(event, validStateSetter))}/>
+      <button id="search-btn" type="button" onClick={handleSearchAndAfter}>
+        <i className="fa-solid fa-search search-icon"></i>
+      </button>
+    </div>
+  )
+}
+function GettingLocation() {
+  return (
+    <p>Searching for <b>{document.getElementById('city-input')?.value.trim() || 'your location'}</b>...</p>
+  )
+}
+function GettingWeather() {
+  return (
+    <p>Getting weather info on <br /> <b>{selectedLocation.name}{selectedLocation.state ? ', ' + selectedLocation.state : 
+      !selectedLocation.state && !selectedLocation.country? '' : ', '}
+    {selectedLocation.state && <br />}{selectedLocation.country}</b></p>
+  )
+}
+function LoadingState({loadingStatus, searchStateSetter, statusStateSetter, loadingStatusStateSetter}) {
+  return (
+    <>
+      <div id='cancel-cont'><button id='cancel' onClick={() => {
+        if (loadingStatus === 'locations-loading') {
+          abortLoactionsFetch();
+          resetStatesToWelcome(searchStateSetter, statusStateSetter, loadingStatusStateSetter);
+        } else {
+          abortWeatherFetch();
+          resetStatesToLocations(statusStateSetter);
+        }
+      }}>Cancel</button>
+      </div>
+      <div id='location-loading-cont'>
+        <div id='loading-spinner'><i className="fa-solid fa-circle-notch fa-spin"></i></div>
+        {loadingStatus === 'locations-loading' ? <GettingLocation /> : <GettingWeather />}
+      </div>
+    </>
+  )
+}
+let updatedStateIndex = 0;
+function LocationResults({ locationList, searchStateSetter, statusStateSetter, loadingStatusStateSetter, searchedState, weatherDataSetter, selectedLocationSetter }) {
+  const navigate = useNavigate();
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    function navigateList(event) {
+      const locations = document.getElementsByClassName('location');
+      const locationsArr = Array.from(locations)
+      for (let i = 0; i < locationsArr.length; i++) {
+        locationsArr[i].classList.remove('highlight');
+      }
+      if (event.key === 'ArrowDown') {
+        setIndex(index + 1);
+        updatedStateIndex = index + 1;
+      } else if (event.key === 'ArrowUp') {
+        setIndex(index - 1);
+        updatedStateIndex = index - 1;
+      } else if (event.key === 'Enter') {
+        const highlighted = locationsArr.find(location => location.classList.contains('highlighted'));
+        if (highlighted && searchedState === 'searched') {
+          highlighted.click();
+        }
+      } else {
+        setIndex(index);
+        return;
+      }
+      console.log(searchedState);
+      if (updatedStateIndex === locationsArr.length) {
+        setIndex(locationsArr.length - 1);
+      }
+      if (updatedStateIndex < 0) {
+        setIndex(0);
+        updatedStateIndex = 0;
+      }
+      const highlighted = locationsArr.find(location => location.classList.contains('highlighted'));
+      if (highlighted) {
+        highlighted.scrollIntoView({block: 'center'});
+      }
+    }
+    document.addEventListener('keydown', navigateList);
+
+    return () => document.removeEventListener('keydown', navigateList);
+  });
+  function selectLocation(event) {
+    let cityField = document.getElementById('city-input');
+    const selLoc = event.currentTarget.querySelectorAll('span');
+    selectedLocation = {
+      name: selLoc[0].innerText.trim(),
+      state: selLoc.length === 3 ? selLoc[1].innerText.trim() : null,
+      country: selLoc.length === 3 ? selLoc[2].innerText.trim() : selLoc[1].innerText.trim(),
+      id: Number(event.currentTarget.getAttribute('id'))
+    }
+    const {id: SelLocId} = selectedLocation;
+    const selectedLocationObj = locationList.filter(location => location.id === SelLocId);
+    const selectedCoordinates = {
+      lat: selectedLocationObj[0].latitude,
+      lng: selectedLocationObj[0].longitude
+    }
+    statusStateSetter('loading');
+    loadingStatusStateSetter('weather-loading');
+    weatherReqController = new AbortController();
+    const url = 'https://api.open-meteo.com/v1/forecast?';
+    const daily = 'weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min';
+    const hourly = 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,precipitation,weather_code';
+    const current = 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code&timezone=auto';
+    const params = new URLSearchParams(
+      `latitude=${selectedCoordinates.lat}&longitude=${selectedCoordinates.lng}&daily=${daily}&hourly=${hourly}&current=${current}`
+    );
+    return fetch(`${url}${params}`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/JSON'
+      },
+      signal: weatherReqController.signal
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(response.statusText);
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.error) {
+        throw new Error(data.reason);
+      } else if (!data) {
+        throw new Error('Could not get weather info');
+      }
+      weatherData = data;
+      console.log(weatherData);
+      cityField.value = '';
+      const currebtRoute = window.location.pathname;
+      if (currebtRoute === '/') {
+        navigate('/dashboard', {
+          state: [selectedLocationObj, weatherData]
+        });
+        statusStateSetter('locations-gotten');
+      } else {
+        navigate('/dashboard', {
+          replace: true,
+          state: [selectedLocationObj, weatherData]
+        });
+        weatherDataSetter(weatherData);
+        selectedLocationSetter(selectedLocationObj);
+        searchStateSetter('not-searched');
+      }
+    })
+    .catch(error => {
+      if (error.message === 'Could not get weather info') {
+        statusStateSetter('weather-info-not-retreived');
+      } else if (error.message === 'Failed to fetch') {
+        statusStateSetter('network-connection-error');
+      } else {
+        statusStateSetter('error-getting-locations');
+      }
+      console.error(error.message);
+      // throw error;
+    });
+  }
+  return (
+    <div id='location-results-cont'>
+      <p id='result-info'>{locationList.length} {locationList.length > 1 ? 'locations' : 'location'} found</p>
+      <div id='location-list' className={locationList.length <= 11 ? 'remove-scrollbar' : 'add-scrollbar'}>
+        <ul>
+          {locationList.map((location, locationIndex) => (
+            <li key={location.id} id={location.id} className={index === locationIndex ? 'location highlighted' : 'location'} onClick={(event) => {selectLocation(event)}}>
+              <span className='location-name'>{location.name}</span>
+              {location.country && location.admin1 ? ', ' : !location.country && location.admin1 ? ', ' : location.country && !location.admin1 ? ', ' : ''}
+              <span className='location-state'>
+                {location.admin1 && location.admin1 !== location.name ? `${location.admin1}` : ''}
+              </span>
+              {(location.admin1 && location.country && location.admin1 && location.admin1 !== location.name) ? ', ' : 
+                !location.admin1 && location.country ? '' : location.admin1 && location.country ? '' : ''}
+              {location.country && <span className='location-country'>{location.country}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <button id='back-btn' onClick={() => resetStatesToWelcome(searchStateSetter, statusStateSetter, loadingStatusStateSetter)}>Go back</button>
+    </div>
+  )
+}
+function NoLocation() {
+  return (
+    <p>Sorry, We couldn't find your location. <br />Please enter an existing location.</p>
+  )
+}
+function NetworkError() {
+  return (
+    <p>Network connection interrupted. <br />Please check your connection and try again.</p>
+  )
+}
+function OtherError() {
+  return (
+    <p>It seems something went wrong. <br />Please try again.</p>
+  )
+}
+function NoWeatherInfo() {
+  const {name, state, country, id} = selectedLocation;
+  return (
+    <p>We couldn't get the weather information on <br /><b>{name}, {state}, {country}</b>. <br />Please try again.</p>
+  )
+}
+function NoResults({searchStateSetter, statusStateSetter, statusState, loadingStatusStateSetter, loadingStatus}) {
+  return (
+    <>
+      <div id='back-cont'><button id='back' onClick={() => {
+        if (loadingStatus === 'locations-loading') {
+          resetStatesToWelcome(searchStateSetter, statusStateSetter, loadingStatusStateSetter);
+        } else {
+          resetStatesToLocations(statusStateSetter);
+        }
+        }}>
+        Back</button>
+      </div>
+      <div id='no-results-cont'>
+        <h3>{statusState === 'locations-not-found' ? 'Not Found!' : statusState === 'weather-info-not-retreived' ? 'Oops!' : statusState === 'network-connection-error' ? 'Oops!' : 'Oops!'}</h3>
+        {statusState === 'locations-not-found' ? <NoLocation /> : statusState === 'weather-info-not-retreived' ? <NoWeatherInfo /> : statusState === 'network-connection-error' ? <NetworkError /> : <OtherError />}
+      </div>
+    </>
+  )
+}
+function ResultsModal({ searchStateSetter, searchedState , statusState, statusStateSetter, loadingStatus, loadingStatusStateSetter, weatherDataSetter, selectedLocationSetter }) {
+  return (
+    <>
+      <div id='modal-outer-cont'>
+        <div id='modal-inner-cont'>
+          {
+            statusState === 'loading' ? <LoadingState loadingStatus={loadingStatus} searchStateSetter={searchStateSetter} 
+              statusStateSetter={statusStateSetter} loadingStatusStateSetter={loadingStatusStateSetter} /> 
+            : statusState === 'locations-gotten' ? <LocationResults locationList={locationList} searchStateSetter={searchStateSetter} statusStateSetter={statusStateSetter} 
+              loadingStatusStateSetter={loadingStatusStateSetter} searchedState={searchedState} weatherDataSetter={weatherDataSetter} selectedLocationSetter={selectedLocationSetter} /> 
+            : <NoResults searchStateSetter={searchStateSetter} statusStateSetter={statusStateSetter} statusState={statusState} 
+              loadingStatusStateSetter={loadingStatusStateSetter} loadingStatus={loadingStatus}/>
+          }
+        </div>
+      </div>
+    </>
+  )
+}
+
+export default WelcomeInterface;
+export { ResultsModal, weatherData, SearchCont, validateInput, startSearch, search, updateStates };
