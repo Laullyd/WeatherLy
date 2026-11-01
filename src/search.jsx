@@ -300,8 +300,9 @@ function LocationResults({ locationList, searchStateSetter, statusStateSetter, l
       weatherData = data;
       console.log(weatherData);
       cityField.value = '';
-      const currebtRoute = window.location.pathname;
-      if (currebtRoute === '/') {
+      const currentRoute = window.location.pathname;
+      console.log(currentRoute);
+      if (currentRoute === '/WeatherLy/') {
         navigate('/dashboard', {
           state: [selectedLocationObj, weatherData]
         });

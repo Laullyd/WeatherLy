@@ -237,7 +237,7 @@ function Header({ validStateSetter, searchStateSetter, selectedLocation, weather
   return (
     <div id='header'>
       <div id='page-brand'>WeatherLy</div>
-      <button id='back-btn' title='Back' onClick={() => history.back()}>←</button>
+      <button id='back-btn' title='Back' onClick={() => navigate('/')}>←</button>
       <button id='refresh-btn' title='Refresh' onClick={() => updateWeatherReport(searchStateSetter, statusStateSetter, selectedLocation, weatherDataSetter, navigate)}>↻</button>
       <SearchCont validStateSetter={validStateSetter} validateInput={validateInput} startSearch={startSearch} handleSearchAndAfter={() => handleSearchAndAfter(statusStateSetter)} />
     </div>

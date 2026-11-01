@@ -8,7 +8,7 @@ import App from './App.jsx';
 const root = document.getElementById("root");
 
 ReactDOM.createRoot(root).render(
-  <BrowserRouter basename="/WeatherLy">
+  <BrowserRouter basename="/WeatherLy/">
     < App/>
   </BrowserRouter>,
 );
