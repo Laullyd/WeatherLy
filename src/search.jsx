@@ -29,7 +29,7 @@ function validateInput(event, setValidationState) {
     console.log('No input');
     return;
   }
-  if (/[./?|!$#@*&^%"'+_=}{:;)(]/.test(input.value)) {
+  if (/[./?|!>$#@*<&^~%"'+_=}`{:;)(-]/.test(input.value)) {
     setValidationState(false);
   } else {
     setValidationState(true);
@@ -301,7 +301,6 @@ function LocationResults({ locationList, searchStateSetter, statusStateSetter, l
       console.log(weatherData);
       cityField.value = '';
       const currentRoute = window.location.pathname;
-      console.log(currentRoute);
       if (currentRoute === '/WeatherLy/') {
         navigate('/dashboard', {
           state: [selectedLocationObj, weatherData]

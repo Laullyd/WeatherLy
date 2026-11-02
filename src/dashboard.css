@@ -126,7 +126,7 @@
   align-items: center;
   padding: 10px;
   /* border: 1px solid #fff; */
-
+/* 
   #back-btn {
     position: absolute;
     top: 2dvh;
@@ -139,7 +139,7 @@
     font-weight: bolder;
     border: none;
     border-radius: 15px;
-  }
+  } */
   #page-brand {
     color: #fff;
     font-family: 'Caveat', 'Satisfy', cursive;
@@ -185,6 +185,15 @@
       cursor: pointer;
       /* border: 1px solid black; */
     }
+  }
+  #input-caveat {
+    position: absolute;
+    top: 50px;
+    right: 9.5dvw;
+    background: var(--bg);
+    color: red;
+    padding: 5px 1dvw;
+    border-radius: 8px;
   }
   #back-btn, #refresh-btn {
     position: absolute;
@@ -332,4 +341,29 @@
   border-radius: 10px;
   box-shadow: var(--shadow);
   z-index: 2;
+
+  #current-cont h2 {
+    margin-top: 5px;
+    /* margin-left: 1.5dvw;
+    text-align: left; */
+  }
+  #current-info-cont {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 18px 1dvw ;
+    /* border: 1px solid black; */
+
+    .current-info {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      background: var(--bg);
+      padding: 2.5dvh 2.2dvw;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      /* border: 1px solid black; */
+    }
+  }
 }

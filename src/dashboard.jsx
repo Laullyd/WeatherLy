@@ -49,7 +49,7 @@ function WeatherDashboard() {
   // console.log(weatherData);
   useEffect(() => {
     const loadNote = () => {
-    pageHeight = document.documentElement.scrollHeight;
+      pageHeight = document.documentElement.scrollHeight;
       setTimeout(() => {
         setDashNoteState('note');
       }, 5000);
@@ -150,7 +150,7 @@ function WeatherDashboard() {
         <Header validStateSetter={setValidationState} searchStateSetter={setDashSearchedState} selectedLocation={selectedLocation} weatherDataSetter={setWeatherData} 
         statusStateSetter={setDashModalStatus} validState={validState} dashSearchedState={dashSearchedState} navigate={navigate} />
         <WeatherSummary selectedLocation={selectedLocation} weatherData={weatherData} />
-        <InfoCard />
+        <InfoCard selectedLocation={selectedLocation} weatherData={weatherData} />
       </div>
     </div>
   ) 
@@ -240,6 +240,7 @@ function Header({ validStateSetter, searchStateSetter, selectedLocation, weather
       <button id='back-btn' title='Back' onClick={() => navigate('/')}>←</button>
       <button id='refresh-btn' title='Refresh' onClick={() => updateWeatherReport(searchStateSetter, statusStateSetter, selectedLocation, weatherDataSetter, navigate)}>↻</button>
       <SearchCont validStateSetter={validStateSetter} validateInput={validateInput} startSearch={startSearch} handleSearchAndAfter={() => handleSearchAndAfter(statusStateSetter)} />
+      {!validState && <small id='input-caveat'>Only commas are allowed!</small>}
     </div>
   )
 }
@@ -309,16 +310,50 @@ function Location({ selectedLocation }) {
     </p>
   )
 }
-function InfoCard() {
-  const [forecast, setForecast] = useState('hourly');
+function InfoCard({ selectedLocation, weatherData }) {
   return (
     <div id='info-card'>
-      <Current />
-      <Forecast />
+      <Current selectedLocation={selectedLocation} weatherData={weatherData} />
+      <Forecast selectedLocation={selectedLocation} weatherData={weatherData} />
     </div>
   )
 }
-function Current() {}
-function Forecast() {}
+function Current({ selectedLocation, weatherData }) {
+  return (
+    <div id='current-cont'>
+      <h2>Current</h2>
+      <hr style={{marginBottom: '0'}} />
+      <div id='current-info-cont'>
+        <div className='current-info'>
+          <p>💧 Humidity</p>
+          <p></p>
+        </div>
+        <div className='current-info'>
+          <p>💨 Wind Speed</p>
+          <p></p>
+        </div>
+        <div className='current-info'>
+          <p>🧭 Wind Direction</p>
+          <p></p>
+        </div>
+        <div className='current-info'>
+          <p>👁️ Visibility</p>
+          <p></p>
+        </div>
+        <div className='current-info'>
+          <p>🌧️ Precipitation</p>
+          <p></p>
+        </div>
+        <div className='current-info'>
+          <p>🌡️ Pressure</p>
+          <p></p>
+        </div>
+      </div>
+    </div>
+  )
+}
+function Forecast({ selectedLocation, weatherData }) {
+  const [forecast, setForecast] = useState('hourly');
+}
 
 export default WeatherDashboard;
