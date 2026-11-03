@@ -126,20 +126,7 @@
   align-items: center;
   padding: 10px;
   /* border: 1px solid #fff; */
-/* 
-  #back-btn {
-    position: absolute;
-    top: 2dvh;
-    left: 1dvw;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: var(--accent);
-    padding: 1dvh 1.5dvw;
-    font-weight: bolder;
-    border: none;
-    border-radius: 15px;
-  } */
+
   #page-brand {
     color: #fff;
     font-family: 'Caveat', 'Satisfy', cursive;
@@ -356,6 +343,7 @@
 
     .current-info {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 5px;

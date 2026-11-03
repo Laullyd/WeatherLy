@@ -50,9 +50,9 @@ function WeatherDashboard() {
   useEffect(() => {
     const loadNote = () => {
       pageHeight = document.documentElement.scrollHeight;
-      setTimeout(() => {
-        setDashNoteState('note');
-      }, 5000);
+      // setTimeout(() => {
+      //   setDashNoteState('note');
+      // }, 5000);
     }
     document.onload = loadNote();
     return () => document.removeEventListener('load', loadNote);
@@ -159,9 +159,9 @@ async function updateWeatherReport(searchStateSetter, statusStateSetter, selecte
   searchStateSetter('reloading');
   const weatherReqController = new AbortController();
   const url = 'https://api.open-meteo.com/v1/forecast?';
-  const daily = 'weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min';
-  const hourly = 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation_probability,precipitation,weather_code';
-  const current = 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code&timezone=auto';
+  const daily = 'weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,uv_index_max,precipitation_sum,rain_sum,wind_speed_10m_max,sunrise,sunset,precipitation_hours,precipitation_probability_max,sunshine_duration,daylight_duration';
+  const hourly = 'temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,apparent_temperature,precipitation_probability,precipitation,visibility,surface_pressure,dew_point_2m,rain,cloud_cover,uv_index';
+  const current = 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&timezone=auto';
   const params = new URLSearchParams(
     `latitude=${selectedLocationObj[0].latitude}&longitude=${selectedLocationObj[0].longitude}&daily=${daily}&hourly=${hourly}&current=${current}`
   );
@@ -245,8 +245,8 @@ function Header({ validStateSetter, searchStateSetter, selectedLocation, weather
   )
 }
 function WeatherSummary({ selectedLocation, weatherData }) {
-  const { time: timeNow, weather_code: weatherCode, is_day: isDay, temperature_2m: temperaature } = weatherData.current;
-  const { apparent_temperature: apparentTemperature } = weatherData.current;
+  const { time: timeNow, weather_code: weatherCode, is_day: isDay, temperature_2m: temperature, apparent_temperature: apparentTemperature } = weatherData.current;
+  const { temperature_2m: temperatureUnit, apparent_temperature: apparentTemperatureUnit } = weatherData.current_units;
   const formattedDate = new Date(timeNow).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -284,7 +284,7 @@ function WeatherSummary({ selectedLocation, weatherData }) {
             [65, 67, 82].includes(weatherCode) ? '#64B5F6' : 
             [95, 96, 97, 99].includes(weatherCode) ? '#1E88E5' : ''}`
           }}></i>
-          <h1 id='temperature'>{`${Number(temperaature).toFixed()}°C`}</h1>
+          <h1 id='temperature'>{`${Number(temperature).toFixed() + temperatureUnit}`}</h1>
         </div>
         <p id='weather-condition'>
           {weatherCode === 0 ? 'Clear sky' : weatherCode === 1 ? 'Sky mainly clear' : 
@@ -296,7 +296,7 @@ function WeatherSummary({ selectedLocation, weatherData }) {
           weatherCode === 82 ? 'Violent rain showers' : weatherCode === 85 ? 'Slight snow showers' : weatherCode === 86 ? 'Heavy snow showers' : weatherCode === 95 ? 'Thunderstorm' : 
           weatherCode === 96 ? 'Thunderstorm with slight hail' : weatherCode === 97 ? 'Heavy thunderstorm' : weatherCode === 99 ? 'Thunderstorm with heavy hail' : ''}
         </p>
-        <p id='feel-temp'> Currently feels like {`${Number(apparentTemperature).toFixed()}°C`}</p>
+        <p id='feel-temp'> Currently feels like {`${Number(apparentTemperature).toFixed() + apparentTemperatureUnit}`}</p>
       </div>
     </div>
   )
@@ -314,11 +314,16 @@ function InfoCard({ selectedLocation, weatherData }) {
   return (
     <div id='info-card'>
       <Current selectedLocation={selectedLocation} weatherData={weatherData} />
+      <hr style={{marginBottom: '0'}} />
       <Forecast selectedLocation={selectedLocation} weatherData={weatherData} />
     </div>
   )
 }
 function Current({ selectedLocation, weatherData }) {
+  const { relative_humidity_2m: humidity, wind_speed_10m: windSpeed, wind_direction_10m: windDirection, precipitation, surface_pressure: surfacePressure } = weatherData.current;
+  const { relative_humidity_2m: humidityUnit, wind_speed_10m: windSpeedUnit, wind_direction_10m: windDirectionUnit, precipitation: precipitationUnit, surface_pressure: surfacePressureUnit }  = weatherData.current_units;
+  const [ visibility, ...rest ] = weatherData.hourly.visibility;
+  const { visibility: visibilityUnit } = weatherData.hourly_units;
   return (
     <div id='current-cont'>
       <h2>Current</h2>
@@ -326,27 +331,27 @@ function Current({ selectedLocation, weatherData }) {
       <div id='current-info-cont'>
         <div className='current-info'>
           <p>💧 Humidity</p>
-          <p></p>
+          <p>{humidity + humidityUnit}</p>
         </div>
         <div className='current-info'>
           <p>💨 Wind Speed</p>
-          <p></p>
+          <p>{windSpeed + windSpeedUnit}</p>
         </div>
         <div className='current-info'>
           <p>🧭 Wind Direction</p>
-          <p></p>
+          <p>{windDirection + windDirectionUnit}</p>
         </div>
         <div className='current-info'>
           <p>👁️ Visibility</p>
-          <p></p>
+          <p>{visibility + visibilityUnit}</p>
         </div>
         <div className='current-info'>
           <p>🌧️ Precipitation</p>
-          <p></p>
+          <p>{precipitation.toFixed() + precipitationUnit}</p>
         </div>
         <div className='current-info'>
           <p>🌡️ Pressure</p>
-          <p></p>
+          <p>{surfacePressure + surfacePressureUnit}</p>
         </div>
       </div>
     </div>

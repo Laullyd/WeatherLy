@@ -161,6 +161,23 @@
       justify-content: center;
       min-height: 25dvh;
       min-width: 30dvw;
+      
+      #retry {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--accent);
+        color: #fff;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 25px;
+        margin-top: 20px;
+        
+        &:hover {
+          background: var(--accent-deep);
+          cursor: pointer;
+        }
+      }
     }
     #location-results-cont {
       display: flex;
