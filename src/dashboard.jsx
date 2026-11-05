@@ -50,9 +50,9 @@ function WeatherDashboard() {
   useEffect(() => {
     const loadNote = () => {
       pageHeight = (Number.parseInt(document.documentElement.scrollHeight) + 15).toString();
-      // setTimeout(() => {
-      //   setDashNoteState('note');
-      // }, 5000);
+      setTimeout(() => {
+        setDashNoteState('note');
+      }, 5000);
     }
     document.onload = loadNote();
     return () => document.removeEventListener('load', loadNote);
