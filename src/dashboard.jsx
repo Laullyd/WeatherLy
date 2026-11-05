@@ -364,6 +364,77 @@ function Current({ weatherData }) {
 }
 function Forecast({ selectedLocation, weatherData }) {
   const [forecast, setForecast] = useState('hourly');
+  const { time, temperature_2m: temperature, weather_code: weatherCode } = weatherData.hourly;
+  const neededHours = [time[0], time[1], time[2], time[3], time[4], time[5], time[6], time[7], time[8], time[9]]
+  const { temperature_2m: temperatureUnit } = weatherData.hourly_units;
+  const weatherCodeMeanings = {
+    "0": "Clear sky",
+    "1": "Mainly clear",
+    "2": "Partly cloudy",
+    "3": "Overcast",
+    "45": "Fog",
+    "48": "Depositing rime fog",
+    "51": "Light drizzle",
+    "53": "Moderate drizzle",
+    "55": "Dense drizzle",
+    "56": "Light freezing drizzle",
+    "57": "Dense freezing drizzle",
+    "61": "Slight rain",
+    "63": "Moderate rain",
+    "65": "Heavy rain",
+    "66": "Light freezing rain",
+    "67": "Heavy freezing rain",
+    "71": "Slight snowfall",
+    "73": "Moderate snowfall",
+    "75": "Heavy snowfall",
+    "77": "Snow grains",
+    "80": "Slight rain showers",
+    "81": "Moderate rain showers",
+    "82": "Violent rain showers",
+    "85": "Slight snow showers",
+    "86": "Heavy snow showers",
+    "95": "Thunderstorm",
+    "96": "Thunderstorm with slight hail",
+    "97": "Heavy thunderstorm",
+    "99": "Thunderstorm with heavy hail"
+  }
+  const { timezone } = weatherData;
+  const timee = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hourCycle: "h23"
+  });
+  const formattedJsYear = Number(timee.format(new Date()).substring(5, 9));
+  const formattedJsMonth = Number(timee.format(new Date()).substring(0, 2));
+  const formattedJsDay = Number(timee.format(new Date()).substring(3, 4));
+  const formattedJsHour = Number(timee.format(new Date()).substring(11, 13));
+  function getFormated24Hour(time) {
+    const formattedAPIHour = new Date(time).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hourCycle: "h23"
+    });
+    return { 
+      all: formattedAPIHour,
+      year: Number(formattedAPIHour.substring(5, 9)),
+      month: Number(formattedAPIHour.substring(0, 2)),
+      day: Number(formattedAPIHour.substring(3, 4)),
+      hour: Number(formattedAPIHour.substring(11, 13))
+    };
+  }
+  function getFormated12Hour(time) {
+    const formattedHour = new Date(time).toLocaleDateString("en-US", {
+      hour: "numeric"
+    });
+    return formattedHour.substring(11);
+  }
   function toggleForecastView(e) {
     e.stopPropagation();
     if (forecast === 'hourly' && e.target.className !== 'in-view') {
@@ -377,14 +448,56 @@ function Forecast({ selectedLocation, weatherData }) {
   return (
     <div id='forecast-cont'>
       <div id='titles-cont'>
-        <h2>Forecast</h2>
+        <div id='titles-inner-cont'>
+          <h2>Forecast</h2>
+          <p>See the weather for the hours ahead or the coming days</p>
+        </div>
         <div id='forecast-toggle'>
           <p id='hourly' className={forecast === 'hourly' ? 'in-view' : ''} onClick={(e) => toggleForecastView(e)}>Hourly</p>
           <p id='daily' className={forecast === 'daily' ? 'in-view' : ''} onClick={(e) => toggleForecastView(e)}>Daily</p>
         </div>
       </div>
-      <hr style={{width: '100%', marginTop: '10px', marginBottom: '0'}} />
-      <div id='forecast-info'></div>
+      {/* <hr style={{width: '100%', marginTop: '10px', marginBottom: '16px'}} /> */}
+      <div id='forecast-info'>
+        {time.map((hour, index) => {
+          const displayedHour = getFormated24Hour(hour).hour >= formattedJsHour ? getFormated12Hour(hour) : 
+            getFormated24Hour(hour).hour < formattedJsHour && getFormated24Hour(hour).day > formattedJsDay ? getFormated12Hour(hour) + ' (tomorrow)' : 
+            getFormated24Hour(hour).hour < formattedJsHour && getFormated24Hour(hour).day > formattedJsDay && getFormated24Hour(hour).month > formattedJsMonth ? getFormated12Hour(hour) + ' (tomorrow)' : 
+            getFormated24Hour(hour).hour < formattedJsHour && getFormated24Hour(hour).day > formattedJsDay && getFormated24Hour(hour).month > formattedJsMonth && getFormated24Hour(hour).year > formattedJsYear ? 
+              getFormated12Hour(hour) + ' (tomorrow)' : 
+            null;
+          return index < 30 && displayedHour !== null ? 
+            <div key={index} className='each-hour'>
+              <p><b>{displayedHour}</b></p>
+              <div id='forecast-icon'>
+                <i className={`fa-solid fa-${
+                  (weatherCode[index] === 0 || weatherCode[index] === 1) && [8, 9, 10, 11, 12, 13, 14, 15, 16].includes(getFormated24Hour(hour).hour) ? 'sun' : 
+                  (weatherCode[index] === 0 || weatherCode[index] === 1) && [17, 18].includes(getFormated24Hour(hour).hour) ? 'cloud' : 
+                  (weatherCode[index] === 0 || weatherCode[index] === 1) && [0, 1, 2, 3, 4, 5, 6, 7, 19, 20, 21, 22, 23].includes(getFormated24Hour(hour).hour) ? 'moon' : 
+                  weatherCode[index] === 2 && [8, 9, 10, 11, 12, 13, 14, 15, 16].includes(getFormated24Hour(hour).hour) ? 'cloud-sun' : 
+                  weatherCode[index] === 2 && [17, 18].includes(getFormated24Hour(hour).hour) ? 'cloud' : weatherCode[index] === 2 && [0, 1, 2, 3, 4, 5, 6, 7, 19, 20, 21, 22, 23].includes(getFormated24Hour(hour).hour) ? 'cloud-moon' : 
+                  weatherCode[index] === 3 && [8, 9, 10, 11, 12, 13, 14, 15, 16].includes(getFormated24Hour(hour).hour) ? 'cloud' :
+                  weatherCode[index] === 3 && [17, 18].includes(getFormated24Hour(hour).hour) ? 'cloud' : weatherCode[index] === 3 && [0, 1, 2, 3, 4, 5, 6, 7, 19, 20, 21, 22, 23].includes(getFormated24Hour(hour).hour) ? 'cloud-moon' : 
+                  weatherCode[index] === 45 || weatherCode[index] === 48 ? 'smog' : 
+                  (weatherCode[index] === 51 || weatherCode[index] === 53 || weatherCode[index] === 56 || weatherCode[index] === 66) && isDay === 1 ? 'cloud-sun-rain' : 
+                  (weatherCode[index] === 51 || weatherCode[index] === 53 || weatherCode[index] === 56 || weatherCode[index] === 66) && isDay === 0 ? 'cloud-moon-rain' : 
+                  [55, 57, 61, 63, 80].includes(weatherCode[index]) ? 'cloud-rain' : 
+                  [65, 67, 81, 82].includes(weatherCode[index]) ? 'cloud-showers-heavy' : 
+                  [95, 96, 97, 99].includes(weatherCode[index]) ? 'cloud-bolt' : 
+                  [71, 73, 75, 77, 85, 86].includes(weatherCode[index]) ? 'cloud-showers-heavy' : ''
+                } hourly-forecast`} style={{color: 
+                  `${[51, 53, 55, 56, 57].includes(weatherCode[index]) ? '#90CAF9' : 
+                  [61, 62, 66, 80].includes(weatherCode[index]) ? '#64B5F6' : 
+                  [65, 67, 82].includes(weatherCode[index]) ? '#64B5F6' : 
+                  [95, 96, 97, 99].includes(weatherCode[index]) ? '#1E88E5' : ''}`
+                }}></i>
+              </div>
+              <h4>{temperature[index] + temperatureUnit}</h4>
+              <p>{weatherCodeMeanings[weatherCode[index]]}</p>
+            </div>
+            : null
+        })}
+      </div>
     </div>
   )
 }

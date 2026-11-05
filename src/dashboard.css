@@ -335,6 +335,7 @@
   border-radius: 10px;
   box-shadow: var(--shadow);
   z-index: 2;
+  padding-bottom: 20px;
 
   #current-cont {
     width: 95%;
@@ -367,8 +368,9 @@
   #forecast-cont {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    min-width: 0;
     width: 95%;
     background: var(--bg);
     padding: 18px 1.6dvw;
@@ -381,32 +383,55 @@
       align-items: center;
       justify-content: space-between;
       width: 100%;
+      margin-bottom: 16px;
       /* border: 1px solid black; */
+
+      #titles-inner-cont {
+        text-align: left;
+      }
 
       #forecast-toggle {
         display: flex;
         align-items: center;
         background: rgb(230, 230, 230);
         min-width: 10dvw;
-        border-radius: 5px;
+        border-radius: 11px;
         /* border: 1px solid var(--text); */
 
         p {
           flex: 1;
-          padding: .3dvh 1.2dvw;
+          padding: .5dvh 2dvw;
           cursor: pointer;
+          border-radius: 11px 11px 11px 11px;
           /* border: 1px solid blue; */
 
           &.in-view {
             background: var(--accent-deep);
             color: var(--bg);
           }
-          &:first-child {
-            border-radius: 5px 0 0 5px;
-          }
-          &:last-child {
-            border-radius: 0 5px 5px 0;
-          }
+        }
+      }
+    }
+    #forecast-info {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: scroll;
+      width: 100%;
+
+      .each-hour {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 15px 3dvw;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+
+        h4 {
+          margin: 7px;
         }
       }
     }
