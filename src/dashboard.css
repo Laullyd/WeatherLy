@@ -1,5 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Satisfy&display=swap');
 
+* {
+  box-sizing: border-box;
+}
 #weatherly-brand  {
   font-family: 'Caveat', 'Satisfy', cursive;
   font-size: 36px;
@@ -322,6 +325,10 @@
   left: 50%;
   transform: translateX(-50%);
   top: 77dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   background: lightgray;
   min-height: 56dvh;
   width: 95dvw;
@@ -329,16 +336,19 @@
   box-shadow: var(--shadow);
   z-index: 2;
 
-  #current-cont h2 {
-    margin-top: 5px;
-    /* margin-left: 1.5dvw;
-    text-align: left; */
+  #current-cont {
+    width: 95%;
+    /* border: 1px solid black; */
+
+    h2 {
+      margin-top: 5px;
+    }
   }
   #current-info-cont {
     display: flex;
     align-items: center;
-    justify-content: space-around;
-    padding: 18px 1dvw ;
+    justify-content: space-between;
+    padding: 18px 0;
     /* border: 1px solid black; */
 
     .current-info {
@@ -352,6 +362,53 @@
       border-radius: 10px;
       box-shadow: var(--shadow);
       /* border: 1px solid black; */
+    }
+  }
+  #forecast-cont {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 95%;
+    background: var(--bg);
+    padding: 18px 1.6dvw;
+    box-shadow: var(--shadow);
+    border-radius: 10px;
+    /* border: 1px solid black; */
+
+    #titles-cont {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      /* border: 1px solid black; */
+
+      #forecast-toggle {
+        display: flex;
+        align-items: center;
+        background: rgb(230, 230, 230);
+        min-width: 10dvw;
+        border-radius: 5px;
+        /* border: 1px solid var(--text); */
+
+        p {
+          flex: 1;
+          padding: .3dvh 1.2dvw;
+          cursor: pointer;
+          /* border: 1px solid blue; */
+
+          &.in-view {
+            background: var(--accent-deep);
+            color: var(--bg);
+          }
+          &:first-child {
+            border-radius: 5px 0 0 5px;
+          }
+          &:last-child {
+            border-radius: 0 5px 5px 0;
+          }
+        }
+      }
     }
   }
 }

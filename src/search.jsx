@@ -203,7 +203,7 @@ function WelcomeInterface({ searchStateSetter, statusStateSetter, searchedState 
     timeOfTheDay = ' evening!';
     todIcon = <i className="fa-solid fa-moon greeting-icon night"></i>;
   }
-  function handleSearchAndAfter(statusStateSetter) {
+  function handleSearchAndAfter(statusStateSetter, validState) {
     search(validState, searchedState, searchStateSetter)
     .then(outcome => {
       if (outcome.status === 'skipped') return;
@@ -221,7 +221,7 @@ function WelcomeInterface({ searchStateSetter, statusStateSetter, searchedState 
       <div id="welcome-cont">
         <h1 id="welcome-heading"><i className="fa-solid fa-cloud-rain heading-icon dark"></i><i className="fa-solid fa-sun heading-icon light"></i>WeatherLy</h1>
         <h4 id="welcome-sub">What's The Weather Like?</h4>
-        <SearchCont validStateSetter={setValidationState} validateInput={validateInput} startSearch={startSearch} handleSearchAndAfter={() => handleSearchAndAfter(statusStateSetter)} />
+        <SearchCont validStateSetter={setValidationState} validateInput={validateInput} startSearch={startSearch} handleSearchAndAfter={() => handleSearchAndAfter(statusStateSetter, validState)} />
         {!validState && <small id='input-caveat'><b>Only commas are allowed!</b></small>}
         <p id='last-statement'>Planning your day or just curious? <br /> See what's happening outside and get a glimpse of the days ahead.</p>
       </div>
@@ -336,10 +336,6 @@ function LocationResults({ locationList, searchStateSetter, statusStateSetter, l
 
     return () => document.removeEventListener('keydown', navigateList);
   });
-  // if (highlighted) {
-  //   console.log(highlighted);
-  //   highlighted.scrollIntoView({block: 'center'});
-  // }
   return (
     <div id='location-results-cont'>
       <p id='result-info'>{locationList.length} {locationList.length > 1 ? 'locations' : 'location'} found</p>
@@ -385,7 +381,7 @@ function NoWeatherInfo() {
     <p>We couldn't get the weather information on <br /><b>{name}, {state}, {country}</b>. <br />Please try again.</p>
   )
 }
-function NoResults({ searchStateSetter, statusStateSetter, statusState, loadingStatusStateSetter, loadingStatus, index, indexSetter, navigate, weatherDataSetter, selectedLocationSetter }) {
+function NoResults({ searchStateSetter, statusStateSetter, statusState, loadingStatusStateSetter, loadingStatus, index, indexSetter, navigate, weatherDataSetter, selectedLocationSetter, searchedState }) {
   return (
     <>
       <div id='back-cont'><button id='back' onClick={() => {
@@ -403,7 +399,7 @@ function NoResults({ searchStateSetter, statusStateSetter, statusState, loadingS
         {(statusState !== 'locations-not-found' || statusState !== 'weather-info-not-retreived') && <button id="retry" 
           onClick={() => {
             if (statusState === 'locations-not-found') {
-              search;
+              search(validState, searchedState, searchStateSetter);
             } else { 
               fetchWeather(statusStateSetter, loadingStatusStateSetter, navigate, weatherDataSetter, selectedLocationSetter, searchStateSetter);
             }
@@ -412,7 +408,7 @@ function NoResults({ searchStateSetter, statusStateSetter, statusState, loadingS
     </>
   )
 }
-function ResultsModal({ searchStateSetter, searchedState , statusState, statusStateSetter, loadingStatus, loadingStatusStateSetter, weatherDataSetter, selectedLocationSetter }) {
+function ResultsModal({ searchStateSetter, searchedState, statusState, statusStateSetter, loadingStatus, loadingStatusStateSetter, weatherDataSetter, selectedLocationSetter }) {
   const navigate = useNavigate();
   const [index, setIndex] = useState(0);
   return (
@@ -426,7 +422,8 @@ function ResultsModal({ searchStateSetter, searchedState , statusState, statusSt
               loadingStatusStateSetter={loadingStatusStateSetter} searchedState={searchedState} weatherDataSetter={weatherDataSetter} selectedLocationSetter={selectedLocationSetter}
               index={index} indexSetter={setIndex} navigate={navigate} /> 
             : <NoResults searchStateSetter={searchStateSetter} statusStateSetter={statusStateSetter} statusState={statusState} loadingStatusStateSetter={loadingStatusStateSetter} 
-              loadingStatus={loadingStatus} index={index} indexSetter={setIndex} navigate={navigate} weatherDataSetter={weatherDataSetter} selectedLocationSetter={selectedLocationSetter} />
+              loadingStatus={loadingStatus} index={index} indexSetter={setIndex} navigate={navigate} weatherDataSetter={weatherDataSetter} selectedLocationSetter={selectedLocationSetter}
+              searchedState={searchedState} />
           }
         </div>
       </div>

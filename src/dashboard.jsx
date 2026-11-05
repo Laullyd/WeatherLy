@@ -49,7 +49,7 @@ function WeatherDashboard() {
   // console.log(weatherData);
   useEffect(() => {
     const loadNote = () => {
-      pageHeight = document.documentElement.scrollHeight;
+      pageHeight = (Number.parseInt(document.documentElement.scrollHeight) + 15).toString();
       // setTimeout(() => {
       //   setDashNoteState('note');
       // }, 5000);
@@ -112,7 +112,7 @@ function WeatherDashboard() {
     return () => document.removeEventListener('load', loadBackground);
   }, [timeOfTheDay, weatherCode]);
   return (
-    <div id='outer-background' style={{height: pageHeight}}>
+    <div id='outer-background' style={{height: pageHeight + 'px'}}>
       <div id="background" style={{
         backgroundImage: `url(${
           timeOfDay === 'early-mrn' ? eveningTime : 
@@ -229,8 +229,8 @@ function ReloadingOverlay() {
   )
 }
 function Header({ validStateSetter, searchStateSetter, selectedLocation, weatherDataSetter, statusStateSetter, validState, dashSearchedState, navigate }) {
-  async function handleSearchAndAfter(statusStateSetter) {
-    const outcome = await search(validState, dashSearchedState, searchStateSetter, statusStateSetter)
+  async function handleSearchAndAfter(statusStateSetter, validState) {
+    const outcome = await search(validState, dashSearchedState, searchStateSetter);
     if (outcome.status === 'skipped') return;
     updateStates(outcome, statusStateSetter);
   }
@@ -239,7 +239,7 @@ function Header({ validStateSetter, searchStateSetter, selectedLocation, weather
       <div id='page-brand'>WeatherLy</div>
       <button id='back-btn' title='Back' onClick={() => navigate('/')}>←</button>
       <button id='refresh-btn' title='Refresh' onClick={() => updateWeatherReport(searchStateSetter, statusStateSetter, selectedLocation, weatherDataSetter, navigate)}>↻</button>
-      <SearchCont validStateSetter={validStateSetter} validateInput={validateInput} startSearch={startSearch} handleSearchAndAfter={() => handleSearchAndAfter(statusStateSetter)} />
+      <SearchCont validStateSetter={validStateSetter} validateInput={validateInput} startSearch={startSearch} handleSearchAndAfter={() => handleSearchAndAfter(statusStateSetter, validState)} />
       {!validState && <small id='input-caveat'>Only commas are allowed!</small>}
     </div>
   )
@@ -253,7 +253,7 @@ function WeatherSummary({ selectedLocation, weatherData }) {
     weekday: "short",
     day: "numeric",
   });
-  const { timezone: timezone } = weatherData;
+  const { timezone } = weatherData;
   const time = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
     hour: "numeric",
@@ -313,15 +313,14 @@ function Location({ selectedLocation }) {
 function InfoCard({ selectedLocation, weatherData }) {
   return (
     <div id='info-card'>
-      <Current selectedLocation={selectedLocation} weatherData={weatherData} />
-      <hr style={{marginBottom: '0'}} />
+      <Current weatherData={weatherData} />
       <Forecast selectedLocation={selectedLocation} weatherData={weatherData} />
     </div>
   )
 }
-function Current({ selectedLocation, weatherData }) {
+function Current({ weatherData }) {
   const { relative_humidity_2m: humidity, wind_speed_10m: windSpeed, wind_direction_10m: windDirection, precipitation, surface_pressure: surfacePressure } = weatherData.current;
-  const { relative_humidity_2m: humidityUnit, wind_speed_10m: windSpeedUnit, wind_direction_10m: windDirectionUnit, precipitation: precipitationUnit, surface_pressure: surfacePressureUnit }  = weatherData.current_units;
+  const { relative_humidity_2m: humidityUnit, wind_speed_10m: windSpeedUnit, wind_direction_10m: windDirectionUnit, precipitation: precipitationUnit, surface_pressure: surfacePressureUnit } = weatherData.current_units;
   const [ visibility, ...rest ] = weatherData.hourly.visibility;
   const { visibility: visibilityUnit } = weatherData.hourly_units;
   return (
@@ -359,6 +358,29 @@ function Current({ selectedLocation, weatherData }) {
 }
 function Forecast({ selectedLocation, weatherData }) {
   const [forecast, setForecast] = useState('hourly');
+  function toggleForecastView(e) {
+    e.stopPropagation();
+    if (forecast === 'hourly' && e.target.className !== 'in-view') {
+      setForecast('daily');
+    } else if (forecast === 'daily' && e.target.className !== 'in-view') {
+      setForecast('hourly');
+    } else {
+      return;
+    }
+  }
+  return (
+    <div id='forecast-cont'>
+      <div id='titles-cont'>
+        <h2>Forecast</h2>
+        <div id='forecast-toggle'>
+          <p id='hourly' className={forecast === 'hourly' ? 'in-view' : ''} onClick={(e) => toggleForecastView(e)}>Hourly</p>
+          <p id='daily' className={forecast === 'daily' ? 'in-view' : ''} onClick={(e) => toggleForecastView(e)}>Daily</p>
+        </div>
+      </div>
+      <hr style={{width: '100%', marginTop: '10px', marginBottom: '0'}} />
+      <div id='forecast-info'></div>
+    </div>
+  )
 }
 
 export default WeatherDashboard;
