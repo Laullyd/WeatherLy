@@ -47,9 +47,9 @@ function WeatherDashboard() {
 
   useEffect(() => {
     const loadNote = () => {
-      setTimeout(() => {
-        setDashNoteState('note');
-      }, 5000);
+      // setTimeout(() => {
+      //   setDashNoteState('note');
+      // }, 5000);
     }
     document.onload = loadNote();
     return () => document.removeEventListener('load', loadNote);
@@ -320,7 +320,7 @@ function InfoCard({ selectedLocation, weatherData }) {
   return (
     <div id='info-card'>
       <Current weatherData={weatherData} />
-      <Forecast selectedLocation={selectedLocation} weatherData={weatherData} />
+      <Forecast weatherData={weatherData} />
     </div>
   )
 }
@@ -362,10 +362,12 @@ function Current({ weatherData }) {
     </div>
   )
 }
-function Forecast({ selectedLocation, weatherData }) {
+function Forecast({ weatherData }) {
   const [forecast, setForecast] = useState('hourly');
-  const { time: responseDates, temperature_2m: temperature, weather_code: weatherCode } = weatherData.hourly;
-  const { temperature_2m: temperatureUnit } = weatherData.hourly_units;
+  const { time: hourlyResponseDates, temperature_2m: hourlyTemperatures, weather_code: hourlyWeatherCodes } = weatherData.hourly;
+  const { temperature_2m: hourlyTemperatureUnit } = weatherData.hourly_units;
+  const { time: dailyResponseDates, temperature_2m: dailyTemperatures, weather_code: dailyWeatherCodes } = weatherData.daily;
+  const { temperature_2m: dailyTemperatureUnit } = weatherData.daily_units;
   const weatherCodeMeanings = {
     "0": "Clear sky",
     "1": "Mainly clear",
@@ -401,22 +403,22 @@ function Forecast({ selectedLocation, weatherData }) {
   const timee = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
     year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
     minute: "numeric",
     hourCycle: "h23"
   });
-  const formattedJsYear = timee.format(new Date()).substring(5, 9);
   const formattedJsMonth = timee.format(new Date()).substring(0, 2);
-  const formattedJsDay = timee.format(new Date()).length === 16 ? timee.format(new Date()).substring(3, 4) : timee.format(new Date()).substring(3, 5);
-  const formattedJsHour = timee.format(new Date()).substring(11, 13);
+  const formattedJsDay = timee.format(new Date()).substring(3, 5);
+  const formattedJsHour = timee.format(new Date()).substring(12, 14);
   function getFormated24Hour(time) {
     const formattedAPIHour = new Date(time).toLocaleDateString("en-US", {
+      timeZone: timezone,
       year: "numeric",
-      month: "numeric",
-      day: "numeric",
-      hour: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
       minute: "numeric",
       hourCycle: "h23"
     });
@@ -424,8 +426,8 @@ function Forecast({ selectedLocation, weatherData }) {
       all: formattedAPIHour,
       year: Number(formattedAPIHour.substring(5, 9)),
       month: Number(formattedAPIHour.substring(0, 2)),
-      day: Number(formattedAPIHour.substring(3, 4)),
-      hour: Number(formattedAPIHour.substring(11, 13))
+      day: Number(formattedAPIHour.length === 16 ? formattedAPIHour.substring(3, 4) : formattedAPIHour.substring(3, 5)),
+      hour: Number(formattedAPIHour.substring(12, 14))
     };
   }
   function getFormated12Hour(time) {
@@ -434,22 +436,23 @@ function Forecast({ selectedLocation, weatherData }) {
     });
     return formattedHour.substring(11);
   }
-  const responseDatesArr = [];
-  const weatherCodesArr = [];
-  responseDates.forEach((eachResponseDate, index) => {
-    if (responseDatesArr.length < 24) {
+  const hourlyResponseDatesArr = [];
+  const hourlyWeatherCodesArr = [];
+  const hourlyTemperaturesArr = [];
+  hourlyResponseDates.forEach((eachResponseDate, index) => {
+    if (hourlyResponseDatesArr.length < 24) {
       if (getFormated24Hour(eachResponseDate).hour > formattedJsHour) {
-        responseDatesArr.push(eachResponseDate);
-        weatherCodesArr.push(weatherCode[index]);
+        hourlyResponseDatesArr.push(eachResponseDate);
+        hourlyWeatherCodesArr.push(hourlyWeatherCodes[index]);
+        hourlyTemperaturesArr.push(hourlyTemperatures[index]);
       } else if (getFormated24Hour(eachResponseDate).hour <= formattedJsHour && getFormated24Hour(eachResponseDate).day > formattedJsDay) {
-        responseDatesArr.push(eachResponseDate);
-        weatherCodesArr.push(weatherCode[index]);
-      } else if (getFormated24Hour(eachResponseDate).hour <= formattedJsHour && getFormated24Hour(eachResponseDate).day > formattedJsDay && getFormated24Hour(eachResponseDate).month > formattedJsMonth) {
-        responseDatesArr.push(eachResponseDate);
-        weatherCodesArr.push(weatherCode[index]);
-      } else if (getFormated24Hour(eachResponseDate).hour <= formattedJsHour && getFormated24Hour(eachResponseDate).day > formattedJsDay && getFormated24Hour(eachResponseDate).month > formattedJsMonth && getFormated24Hour(eachResponseDate).year > formattedJsYear) {
-        responseDatesArr.push(eachResponseDate);
-        weatherCodesArr.push(weatherCode[index]);
+        hourlyResponseDatesArr.push(eachResponseDate);
+        hourlyWeatherCodesArr.push(hourlyWeatherCodes[index]);
+        hourlyTemperaturesArr.push(hourlyTemperatures[index]);
+      } else if (getFormated24Hour(eachResponseDate).hour <= formattedJsHour && getFormated24Hour(eachResponseDate).day < formattedJsDay && getFormated24Hour(eachResponseDate).month > formattedJsMonth) {
+        hourlyResponseDatesArr.push(eachResponseDate);
+        hourlyWeatherCodesArr.push(hourlyWeatherCodes[index]);
+        hourlyTemperaturesArr.push(hourlyTemperatures[index]);
       }
     }
   })
@@ -476,47 +479,60 @@ function Forecast({ selectedLocation, weatherData }) {
         </div>
       </div>
       {/* <hr style={{width: '100%', marginTop: '10px', marginBottom: '16px'}} /> */}
-      <div id='forecast-info'>
-        {responseDatesArr.map((eachDate, index) => {
-          const displayedHour = getFormated24Hour(eachDate).hour > formattedJsHour ? getFormated12Hour(eachDate) + ' (today)' : 
-            getFormated24Hour(eachDate).hour <= formattedJsHour && getFormated24Hour(eachDate).day > formattedJsDay ? getFormated12Hour(eachDate) + ' (tomorrow)' : 
-            getFormated24Hour(eachDate).hour <= formattedJsHour && getFormated24Hour(eachDate).day > formattedJsDay && getFormated24Hour(eachDate).month > formattedJsMonth ? getFormated12Hour(eachDate) + ' (tomorrow)' : 
-            getFormated24Hour(eachDate).hour <= formattedJsHour && getFormated24Hour(eachDate).day > formattedJsDay && getFormated24Hour(eachDate).month > formattedJsMonth && getFormated24Hour(eachDate).year > formattedJsYear ? 
-              getFormated12Hour(eachDate) + ' (tomorrow)' : 
-            null;
-          return index < 24 && displayedHour !== null ? 
-            <div key={index} className='each-hour'>
-              <p><b>{displayedHour}</b></p>
-              <div id='forecast-icon'>
-                <i className={`fa-solid fa-${
-                  (weatherCodesArr[index] === 0 || weatherCodesArr[index] === 1) && [8, 9, 10, 11, 12, 13, 14, 15, 16].includes(getFormated24Hour(eachDate).hour) ? 'sun' : 
-                  (weatherCodesArr[index] === 0 || weatherCodesArr[index] === 1) && [17, 18].includes(getFormated24Hour(eachDate).hour) ? 'cloud' : 
-                  (weatherCodesArr[index] === 0 || weatherCodesArr[index] === 1) && [0, 1, 2, 3, 4, 5, 6, 7, 19, 20, 21, 22, 23].includes(getFormated24Hour(eachDate).hour) ? 'moon' : 
-                  weatherCodesArr[index] === 2 && [8, 9, 10, 11, 12, 13, 14, 15, 16].includes(getFormated24Hour(eachDate).hour) ? 'cloud-sun' : 
-                  weatherCodesArr[index] === 2 && [17, 18].includes(getFormated24Hour(eachDate).hour) ? 'cloud' : weatherCodesArr[index] === 2 && [0, 1, 2, 3, 4, 5, 6, 7, 19, 20, 21, 22, 23].includes(getFormated24Hour(eachDate).hour) ? 'cloud-moon' : 
-                  weatherCodesArr[index] === 3 && [8, 9, 10, 11, 12, 13, 14, 15, 16].includes(getFormated24Hour(eachDate).hour) ? 'cloud' :
-                  weatherCodesArr[index] === 3 && [17, 18].includes(getFormated24Hour(eachDate).hour) ? 'cloud' : weatherCodesArr[index] === 3 && [0, 1, 2, 3, 4, 5, 6, 7, 19, 20, 21, 22, 23].includes(getFormated24Hour(eachDate).hour) ? 'cloud-moon' : 
-                  weatherCodesArr[index] === 45 || weatherCodesArr[index] === 48 ? 'smog' : 
-                  (weatherCodesArr[index] === 51 || weatherCodesArr[index] === 53 || weatherCodesArr[index] === 56 || weatherCodesArr[index] === 66) ? 'cloud-sun-rain' : 
-                  (weatherCodesArr[index] === 51 || weatherCodesArr[index] === 53 || weatherCodesArr[index] === 56 || weatherCodesArr[index] === 66) ? 'cloud-moon-rain' : 
-                  [55, 57, 61, 63, 80].includes(weatherCodesArr[index]) ? 'cloud-rain' : 
-                  [65, 67, 81, 82].includes(weatherCodesArr[index]) ? 'cloud-showers-heavy' : 
-                  [95, 96, 97, 99].includes(weatherCodesArr[index]) ? 'cloud-bolt' : 
-                  [71, 73, 75, 77, 85, 86].includes(weatherCodesArr[index]) ? 'cloud-showers-heavy' : ''
-                } hourly-forecast`} style={{color: 
-                  `${[51, 53, 55, 56, 57].includes(weatherCodesArr[index]) ? '#90CAF9' : 
-                  [61, 62, 66, 80].includes(weatherCodesArr[index]) ? '#64B5F6' : 
-                  [65, 67, 82].includes(weatherCodesArr[index]) ? '#64B5F6' : 
-                  [95, 96, 97, 99].includes(weatherCodesArr[index]) ? '#1E88E5' : ''}`
-                }}></i>
-              </div>
-              <h4>{temperature[index] + temperatureUnit}</h4>
-              <p>{weatherCodeMeanings[weatherCodesArr[index]]}</p>
-            </div>
-            : null
-        })}
-      </div>
+      {forecast === 'hourly' ? <Hourly hourlyTemperatureUnit={hourlyTemperatureUnit} hourlyWeatherCodesArr={hourlyWeatherCodesArr} hourlyTemperaturesArr={hourlyTemperaturesArr} 
+        hourlyResponseDatesArr={hourlyResponseDatesArr} weatherCodeMeanings={weatherCodeMeanings}formattedJsHour={formattedJsHour} formattedJsDay={formattedJsDay} formattedJsMonth={formattedJsMonth} 
+        getFormated12Hour={getFormated12Hour} getFormated24Hour={getFormated24Hour} /> :
+        <Daily dailyTemperatureUnit={dailyTemperatureUnit} dailyWeatherCodesArr={dailyWeatherCodesArr} dailyTemperaturesArr={dailyTemperaturesArr} dailyResponseDatesArr={dailyResponseDatesArr} 
+        weatherCodeMeanings={weatherCodeMeanings} /> 
+      }
     </div>
+  )
+}
+function Hourly({ hourlyTemperatureUnit, hourlyWeatherCodesArr, hourlyTemperaturesArr, hourlyResponseDatesArr, weatherCodeMeanings, formattedJsHour, formattedJsDay, formattedJsMonth, getFormated12Hour, getFormated24Hour }) {
+  return (
+    <div id='forecast-info'>
+      {hourlyResponseDatesArr.map((eachDate, index) => {
+        const displayedHour = getFormated24Hour(eachDate).hour > formattedJsHour ? getFormated12Hour(eachDate) + ' (today)' : 
+          getFormated24Hour(eachDate).hour <= formattedJsHour && getFormated24Hour(eachDate).day > formattedJsDay ? getFormated12Hour(eachDate) + ' (tomorrow)' : 
+          getFormated24Hour(eachDate).hour <= formattedJsHour && getFormated24Hour(eachDate).day < formattedJsDay && getFormated24Hour(eachDate).month > formattedJsMonth ? getFormated12Hour(eachDate) + ' (tomorrow)' : 
+          null;
+        return index < 24 && displayedHour !== null ? 
+          <div key={index} className='each-hour'>
+            <p><b>{displayedHour}</b></p>
+            <div id='forecast-icon'>
+              <i className={`fa-solid fa-${
+                (hourlyWeatherCodesArr[index] === 0 || hourlyWeatherCodesArr[index] === 1) && [8].includes(getFormated24Hour(eachDate).hour) ? 'cloud-sun' : 
+                (hourlyWeatherCodesArr[index] === 0 || hourlyWeatherCodesArr[index] === 1) && [9, 10, 11, 12, 13, 14, 15, 16].includes(getFormated24Hour(eachDate).hour) ? 'sun' : 
+                (hourlyWeatherCodesArr[index] === 0 || hourlyWeatherCodesArr[index] === 1) && [17, 18].includes(getFormated24Hour(eachDate).hour) ? 'cloud' : 
+                (hourlyWeatherCodesArr[index] === 0 || hourlyWeatherCodesArr[index] === 1) && [0, 1, 2, 3, 4, 5, 6, 7, 19, 20, 21, 22, 23].includes(getFormated24Hour(eachDate).hour) ? 'moon' : 
+                hourlyWeatherCodesArr[index] === 2 && [8, 9, 10, 11, 12, 13, 14, 15, 16].includes(getFormated24Hour(eachDate).hour) ? 'cloud-sun' : 
+                hourlyWeatherCodesArr[index] === 2 && [17, 18].includes(getFormated24Hour(eachDate).hour) ? 'cloud' : hourlyWeatherCodesArr[index] === 2 && [0, 1, 2, 3, 4, 5, 6, 7, 19, 20, 21, 22, 23].includes(getFormated24Hour(eachDate).hour) ? 'cloud-moon' : 
+                hourlyWeatherCodesArr[index] === 3 ? 'cloud' : hourlyWeatherCodesArr[index] === 45 || hourlyWeatherCodesArr[index] === 48 ? 'smog' : 
+                (hourlyWeatherCodesArr[index] === 51 || hourlyWeatherCodesArr[index] === 53 || hourlyWeatherCodesArr[index] === 56 || hourlyWeatherCodesArr[index] === 66) && [8, 9, 10, 11, 12, 13, 14, 15, 16].includes(getFormated24Hour(eachDate).hour) ? 'cloud-sun-rain' : 
+                (hourlyWeatherCodesArr[index] === 51 || hourlyWeatherCodesArr[index] === 53 || hourlyWeatherCodesArr[index] === 56 || hourlyWeatherCodesArr[index] === 66) && [17, 18].includes(getFormated24Hour(eachDate).hour) ? 'cloud-rain' : 
+                (hourlyWeatherCodesArr[index] === 51 || hourlyWeatherCodesArr[index] === 53 || hourlyWeatherCodesArr[index] === 56 || hourlyWeatherCodesArr[index] === 66) && [0, 1, 2, 3, 4, 5, 6, 7, 19, 20, 21, 22, 23].includes(getFormated24Hour(eachDate).hour) ? 'cloud-moon-rain' : 
+                [55, 57, 61, 63, 80].includes(hourlyWeatherCodesArr[index]) ? 'cloud-rain' : 
+                [65, 67, 81, 82].includes(hourlyWeatherCodesArr[index]) ? 'cloud-showers-heavy' : 
+                [95, 96, 97, 99].includes(hourlyWeatherCodesArr[index]) ? 'cloud-bolt' : 
+                [71, 73, 75, 77, 85, 86].includes(hourlyWeatherCodesArr[index]) ? 'cloud-showers-heavy' : ''
+              } hourly-forecast`} style={{color: 
+                `${[51, 53, 55, 56, 57].includes(hourlyWeatherCodesArr[index]) ? '#90CAF9' : 
+                [61, 62, 66, 80].includes(hourlyWeatherCodesArr[index]) ? '#64B5F6' : 
+                [65, 67, 82].includes(hourlyWeatherCodesArr[index]) ? '#64B5F6' : 
+                [95, 96, 97, 99].includes(hourlyWeatherCodesArr[index]) ? '#1E88E5' : ''}`
+              }}></i>
+            </div>
+            <h4>{hourlyTemperaturesArr[index] + hourlyTemperatureUnit}</h4>
+            <p>{weatherCodeMeanings[hourlyWeatherCodesArr[index]]}</p>
+          </div>
+          : null
+      })}
+    </div>
+  )
+}
+function Daily({ temperatureUnit, weatherCodesArr, temperatureArr, responseDatesArr, weatherCodeMeanings }) {
+  return (
+    <div id='forecast-info'></div>
   )
 }
 

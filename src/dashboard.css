@@ -433,6 +433,21 @@
         h4 {
           margin: 7px;
         }
+        .fa-sun {
+          color: #FFD700;
+        }
+        .fa-moon {
+          color: #7986CB;
+        }
+        .fa-cloud {
+          color: #78909C;
+        }
+        .fa-cloud-sun {
+          color: #FFD700;
+        }
+        .fa-cloud-moon {
+          color: #7986CB;
+        }
       }
     }
   }
