@@ -149,9 +149,9 @@ function WeatherDashboard() {
         {timeOfDay === 'heavy-snow-evn' && <div id='overlay-notSunny'></div>}
         {dashNoteState === 'note' && <NoteModal noteStateSetter={setDashNoteState} />}
         {dashSearchedState === 'searched' && <ResultsModal searchStateSetter={setDashSearchedState} searchedState={dashSearchedState} statusState={dashModalStatus} statusStateSetter={setDashModalStatus} 
-          loadingStatus={loadingStatus} loadingStatusStateSetter={setLoadingStatus} weatherDataSetter={setWeatherData} selectedLocationSetter={setSelectedLocation} />}
+          loadingStatusState={loadingStatus} loadingStatusStateSetter={setLoadingStatus} weatherDataSetter={setWeatherData} selectedLocationSetter={setSelectedLocation} validState={validState} />}
         {dashSearchedState === 'reloading' && <ReloadingOverlay />}
-        <Header validStateSetter={setValidationState} searchStateSetter={setDashSearchedState} selectedLocation={selectedLocation} weatherDataSetter={setWeatherData} 
+        <Header validStateSetter={setValidationState} searchStateSetter={setDashSearchedState} selectedLocation={selectedLocation} weatherDataSetter={setWeatherData} loadingStatusState={loadingStatus} 
         statusStateSetter={setDashModalStatus} validState={validState} dashSearchedState={dashSearchedState} navigate={navigate} />
         <WeatherSummary selectedLocation={selectedLocation} weatherData={weatherData} />
         <InfoCard selectedLocation={selectedLocation} weatherData={weatherData} />
@@ -232,10 +232,13 @@ function ReloadingOverlay() {
     </div>
   )
 }
-function Header({ validStateSetter, searchStateSetter, selectedLocation, weatherDataSetter, statusStateSetter, validState, dashSearchedState, navigate }) {
+function Header({ validStateSetter, searchStateSetter, selectedLocation, weatherDataSetter, loadingStatusState, statusStateSetter, validState, dashSearchedState, navigate }) {
   async function handleSearchAndAfter(statusStateSetter, validState) {
-    const outcome = await search(validState, dashSearchedState, searchStateSetter);
-    if (outcome.status === 'skipped') return;
+    const outcome = await search(validState, dashSearchedState, searchStateSetter, loadingStatusState, statusStateSetter);
+    if (outcome.status === 'skipped') {
+      console.log('One of the conditions failed!');
+      return;
+    }
     updateStates(outcome, statusStateSetter);
   }
   return (
@@ -251,7 +254,6 @@ function Header({ validStateSetter, searchStateSetter, selectedLocation, weather
 function WeatherSummary({ selectedLocation, weatherData }) {
   const { time: timeNow, weather_code: weatherCode, is_day: isDay, temperature_2m: temperature, apparent_temperature: apparentTemperature } = weatherData.current;
   const { temperature_2m: temperatureUnit, apparent_temperature: apparentTemperatureUnit } = weatherData.current_units;
-  // const responseDate = new Date(timeNow * 1000);
   const { timezone } = weatherData;
   const formattedDate = new Intl.DateTimeFormat("en-US", {
     year: "numeric",
@@ -364,6 +366,7 @@ function Current({ weatherData }) {
 }
 function Forecast({ weatherData }) {
   const [forecast, setForecast] = useState('hourly');
+  const { utc_offset_seconds: utcOffsetSeconds } = weatherData;
   const { time: hourlyResponseDates, temperature_2m: hourlyTemperatures, weather_code: hourlyWeatherCodes } = weatherData.hourly;
   const { temperature_2m: hourlyTemperatureUnit } = weatherData.hourly_units;
   const { time: dailyResponseDates, temperature_2m: dailyTemperatures, weather_code: dailyWeatherCodes } = weatherData.daily;
@@ -414,7 +417,6 @@ function Forecast({ weatherData }) {
   const formattedJsHour = timee.format(new Date()).substring(12, 14);
   function getFormated24Hour(time) {
     const formattedAPIHour = new Date(time).toLocaleDateString("en-US", {
-      timeZone: timezone,
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -434,7 +436,7 @@ function Forecast({ weatherData }) {
     const formattedHour = new Date(time).toLocaleDateString("en-US", {
       hour: "numeric"
     });
-    return formattedHour.substring(11);
+    return formattedHour.substring(11)
   }
   const hourlyResponseDatesArr = [];
   const hourlyWeatherCodesArr = [];

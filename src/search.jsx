@@ -23,17 +23,17 @@ function abortWeatherFetch() {
   weatherReqController.abort('Request cancelled by user');
   console.log('Request Aborted!');
 }
-function validateInput(event, setValidationState) {
+function validateInput(event, validStateSetter) {
   const input = event.target;
   if (!input.value) {
-    setValidationState(true);
+    validStateSetter(true);
     console.log('No input');
     return;
   }
   if (/[./?|!>$#@*<&^~%"'+_=}`{:;)(-]/.test(input.value)) {
-    setValidationState(false);
+    validStateSetter(false);
   } else {
-    setValidationState(true);
+    validStateSetter(true);
   }
 }
 function startSearch(e) {
@@ -44,7 +44,7 @@ function startSearch(e) {
   }
   searchBtn.click();
 }
-function search(validState, searchedState, searchStateSetter) {
+function search(validState, searchedState, searchStateSetter, loadingStatusState) {
   const cityField = document.getElementById('city-input');
   const cityInput = cityField.value.trim();
   const params = new URLSearchParams(`name=${cityInput}&count=100`);
@@ -52,14 +52,16 @@ function search(validState, searchedState, searchStateSetter) {
   if (!cityInput) {
     return Promise.resolve({ status: 'skipped' });
   }
-  if (searchedState !== 'not-searched') {
+  if (searchedState !== 'not-searched' && loadingStatusState !== 'locations-loading') {
     return Promise.resolve({ status: 'skipped' });
   }
   if (!validState) {
     console.log('Inputed symbols are not allowed!');
     return Promise.resolve({ status: 'skipped' });
   }
-  searchStateSetter('searched');
+  if (searchedState !== 'searched') {
+    searchStateSetter('searched');
+  }
   loactionReqController = new AbortController();
   return fetch(`${url}${params}`, {
     method: 'GET',
@@ -88,10 +90,11 @@ function search(validState, searchedState, searchStateSetter) {
     }
     locationList = data.results;
     console.log(locationList);
-    return {
+    const reqStat = {
       status: 'success',
       result: locationList
-    }
+    };
+    return reqStat;
   })
   .catch(error => {
     console.error(error.message);
@@ -171,14 +174,15 @@ function selectLocation(event, statusStateSetter, loadingStatusStateSetter, navi
         selectedLocationSetter(selectedLocationObj);
         searchStateSetter('not-searched');
       }
+      loadingStatusStateSetter('locations-loading');
     })
     .catch(error => {
       if (error.message === 'Could not get weather info') {
         statusStateSetter('weather-info-not-retreived');
       } else if (error.message === 'Failed to fetch') {
-        statusStateSetter('network-connection-error');
+        statusStateSetter('network-connection-error-weather');
       } else {
-        statusStateSetter('error-getting-locations');
+        statusStateSetter('error-getting-weather');
       }
       console.error(error.message);
       // throw error;
@@ -186,8 +190,7 @@ function selectLocation(event, statusStateSetter, loadingStatusStateSetter, navi
   }
   fetchWeather(statusStateSetter, loadingStatusStateSetter, navigate, weatherDataSetter, selectedLocationSetter, searchStateSetter);
 }
-function WelcomeInterface({ searchStateSetter, statusStateSetter, searchedState }) {
-  const [validState, setValidationState] = useState(true);
+function WelcomeInterface({ searchStateSetter, statusStateSetter, searchedState, validState, validStateSetter, loadingStatusState }) {
   const currentHour = new Date().getHours();
   let timeOfTheDay = '';
   let todIcon = '';
@@ -205,9 +208,12 @@ function WelcomeInterface({ searchStateSetter, statusStateSetter, searchedState 
     todIcon = <i className="fa-solid fa-moon greeting-icon night"></i>;
   }
   function handleSearchAndAfter(statusStateSetter, validState) {
-    search(validState, searchedState, searchStateSetter)
+    search(validState, searchedState, searchStateSetter, loadingStatusState)
     .then(outcome => {
-      if (outcome.status === 'skipped') return;
+      if (outcome.status === 'skipped') {
+        console.log('One of the conditions failed!');
+        return;
+      }
       updateStates(outcome, statusStateSetter);
     })
     // Other ways are...
@@ -222,7 +228,7 @@ function WelcomeInterface({ searchStateSetter, statusStateSetter, searchedState 
       <div id="welcome-cont">
         <h1 id="welcome-heading"><i className="fa-solid fa-cloud-rain heading-icon dark"></i><i className="fa-solid fa-sun heading-icon light"></i>WeatherLy</h1>
         <h4 id="welcome-sub">What's The Weather Like?</h4>
-        <SearchCont validStateSetter={setValidationState} validateInput={validateInput} startSearch={startSearch} handleSearchAndAfter={() => handleSearchAndAfter(statusStateSetter, validState)} />
+        <SearchCont validStateSetter={validStateSetter} validateInput={validateInput} startSearch={startSearch} handleSearchAndAfter={() => handleSearchAndAfter(statusStateSetter, validState)} />
         {!validState && <small id='input-caveat'><b>Only commas are allowed!</b></small>}
         <p id='last-statement'>Planning your day or just curious? <br /> See what's happening outside and get a glimpse of the days ahead.</p>
       </div>
@@ -246,7 +252,7 @@ function updateStates(outcome, statusStateSetter) {
       statusStateSetter('locations-not-found');
       break;
     case 'network-connection-error': 
-      statusStateSetter('network-connection-error');
+      statusStateSetter('network-connection-error-locations');
       break;
     case 'error-getting-locations': 
       statusStateSetter('error-getting-locations');
@@ -275,22 +281,22 @@ function GettingWeather() {
     {selectedLocation.state && <br />}{selectedLocation.country}</b></p>
   )
 }
-function LoadingState({loadingStatus, searchStateSetter, statusStateSetter, loadingStatusStateSetter}) {
+function LoadingState({loadingStatusState, searchStateSetter, index, indexSetter, statusStateSetter, loadingStatusStateSetter}) {
   return (
     <>
       <div id='cancel-cont'><button id='cancel' onClick={() => {
-        if (loadingStatus === 'locations-loading') {
+        if (loadingStatusState === 'locations-loading') {
           abortLoactionsFetch();
           resetStatesToWelcome(searchStateSetter, statusStateSetter, loadingStatusStateSetter);
         } else {
           abortWeatherFetch();
-          resetStatesToLocations(statusStateSetter);
+          resetStatesToLocations(statusStateSetter, index, indexSetter);
         }
       }}>Cancel</button>
       </div>
       <div id='location-loading-cont'>
         <div id='loading-spinner'><i className="fa-solid fa-circle-notch fa-spin"></i></div>
-        {loadingStatus === 'locations-loading' ? <GettingLocation /> : <GettingWeather />}
+        {loadingStatusState === 'locations-loading' ? <GettingLocation /> : <GettingWeather />}
       </div>
     </>
   )
@@ -382,11 +388,11 @@ function NoWeatherInfo() {
     <p>We couldn't get the weather information on <br /><b>{name}, {state}, {country}</b>. <br />Please try again.</p>
   )
 }
-function NoResults({ searchStateSetter, statusStateSetter, statusState, loadingStatusStateSetter, loadingStatus, index, indexSetter, navigate, weatherDataSetter, selectedLocationSetter, searchedState }) {
+function NoResults({ searchStateSetter, statusStateSetter, statusState, loadingStatusStateSetter, loadingStatusState, index, indexSetter, navigate, weatherDataSetter, selectedLocationSetter, searchedState, validState }) {
   return (
     <>
       <div id='back-cont'><button id='back' onClick={() => {
-        if (loadingStatus === 'locations-loading') {
+        if (loadingStatusState === 'locations-loading') {
           resetStatesToWelcome(searchStateSetter, statusStateSetter, loadingStatusStateSetter);
         } else {
           resetStatesToLocations(statusStateSetter, index, indexSetter);
@@ -395,13 +401,23 @@ function NoResults({ searchStateSetter, statusStateSetter, statusState, loadingS
         Back</button>
       </div>
       <div id='no-results-cont'>
-        <h3>{statusState === 'locations-not-found' ? 'Not Found!' : statusState === 'weather-info-not-retreived' ? 'Oops!' : statusState === 'network-connection-error' ? 'Oops!' : 'Oops!'}</h3>
-        {statusState === 'locations-not-found' ? <NoLocation /> : statusState === 'weather-info-not-retreived' ? <NoWeatherInfo /> : statusState === 'network-connection-error' ? <NetworkError /> : <OtherError />}
+        <h3>{statusState === 'locations-not-found' ? 'Not Found!' : statusState === 'weather-info-not-retreived' ? 'Oops!' : 
+          (statusState === 'network-connection-error-locations' || statusState === 'network-connection-error-weather') ? 'Oops!' : 'Oops!'}</h3>
+        {statusState === 'locations-not-found' ? <NoLocation /> : statusState === 'weather-info-not-retreived' ? <NoWeatherInfo /> : 
+          (statusState === 'network-connection-error-locations' || statusState === 'network-connection-error-weather') ? <NetworkError /> : <OtherError />}
         {(statusState !== 'locations-not-found' || statusState !== 'weather-info-not-retreived') && <button id="retry" 
           onClick={() => {
-            if (statusState === 'locations-not-found') {
-              search(validState, searchedState, searchStateSetter);
-            } else { 
+            if (statusState === 'network-connection-error-locations' || statusState === 'error-getting-locations') {
+              // console.log('works');
+              statusStateSetter('loading');
+              search(validState, searchedState, searchStateSetter, loadingStatusState)
+              .then(outcome => {
+                if (outcome.status === 'skipped') return;
+                // console.log('works');
+                updateStates(outcome, statusStateSetter);
+              })
+              // console.log('works');
+            } else if (statusState === 'network-connection-error-weather' || statusState === 'error-getting-weather') { 
               fetchWeather(statusStateSetter, loadingStatusStateSetter, navigate, weatherDataSetter, selectedLocationSetter, searchStateSetter);
             }
           }}>Retry</button>}
@@ -409,7 +425,7 @@ function NoResults({ searchStateSetter, statusStateSetter, statusState, loadingS
     </>
   )
 }
-function ResultsModal({ searchStateSetter, searchedState, statusState, statusStateSetter, loadingStatus, loadingStatusStateSetter, weatherDataSetter, selectedLocationSetter }) {
+function ResultsModal({ searchStateSetter, searchedState, statusState, statusStateSetter, loadingStatusState, loadingStatusStateSetter, weatherDataSetter, selectedLocationSetter, validState }) {
   const navigate = useNavigate();
   const [index, setIndex] = useState(0);
   return (
@@ -417,14 +433,14 @@ function ResultsModal({ searchStateSetter, searchedState, statusState, statusSta
       <div id='modal-outer-cont'>
         <div id='modal-inner-cont'>
           {
-            statusState === 'loading' ? <LoadingState loadingStatus={loadingStatus} searchStateSetter={searchStateSetter} 
+            statusState === 'loading' ? <LoadingState loadingStatusState={loadingStatusState} searchStateSetter={searchStateSetter} index={index} indexSetter={setIndex} 
               statusStateSetter={statusStateSetter} loadingStatusStateSetter={loadingStatusStateSetter} /> 
             : statusState === 'locations-gotten' ? <LocationResults locationList={locationList} searchStateSetter={searchStateSetter} statusStateSetter={statusStateSetter} 
               loadingStatusStateSetter={loadingStatusStateSetter} searchedState={searchedState} weatherDataSetter={weatherDataSetter} selectedLocationSetter={selectedLocationSetter}
               index={index} indexSetter={setIndex} navigate={navigate} /> 
             : <NoResults searchStateSetter={searchStateSetter} statusStateSetter={statusStateSetter} statusState={statusState} loadingStatusStateSetter={loadingStatusStateSetter} 
-              loadingStatus={loadingStatus} index={index} indexSetter={setIndex} navigate={navigate} weatherDataSetter={weatherDataSetter} selectedLocationSetter={selectedLocationSetter}
-              searchedState={searchedState} />
+              loadingStatusState={loadingStatusState} index={index} indexSetter={setIndex} navigate={navigate} weatherDataSetter={weatherDataSetter} selectedLocationSetter={selectedLocationSetter}
+              searchedState={searchedState} validState={validState} />
           }
         </div>
       </div>

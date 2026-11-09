@@ -7,19 +7,22 @@ import './App.css'
 
 function App() {
   const [searchedState, setSearched] = useState('not-searched');
-  const [status, setStatus] = useState('loading');
+  const [modalStatus, setModalStatus] = useState('loading');
   const [loadingStatus, setLoadingStatus] = useState('locations-loading');
   const [ , setWeatherData] = useState({});
   const [ , setSelectedLocation] = useState({});
+  const [validState, setValidationState] = useState(true);
   return (
     <>
       <Routes>
         <Route path="/" element={
-          searchedState === 'not-searched' ? <WelcomeInterface searchStateSetter={setSearched} statusStateSetter={setStatus} searchedState={searchedState} /> :
+          searchedState === 'not-searched' ? <WelcomeInterface searchStateSetter={setSearched} statusStateSetter={setModalStatus} searchedState={searchedState} validState={validState} 
+            validStateSetter={setValidationState} loadingStatusState={loadingStatus} /> :
           <>
-            <WelcomeInterface searchStateSetter={setSearched} statusStateSetter={setStatus} searchedState={searchedState} /> 
-            <ResultsModal searchStateSetter={setSearched} searchedState={searchedState} statusState={status} statusStateSetter={setStatus} 
-              loadingStatus={loadingStatus} loadingStatusStateSetter={setLoadingStatus} weatherDataSetter={setWeatherData} selectedLocationSetter={setSelectedLocation}  />
+            <WelcomeInterface searchStateSetter={setSearched} statusStateSetter={setModalStatus} searchedState={searchedState} validState={validState} validStateSetter={setValidationState} 
+               loadingStatusState={loadingStatus} /> 
+            <ResultsModal searchStateSetter={setSearched} searchedState={searchedState} statusState={modalStatus} statusStateSetter={setModalStatus} loadingStatusState={loadingStatus} 
+              loadingStatusStateSetter={setLoadingStatus} weatherDataSetter={setWeatherData} selectedLocationSetter={setSelectedLocation} validState={validState} />
           </>}
         />
         <Route path="/dashboard" element={<WeatherDashboard />} />
