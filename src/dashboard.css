@@ -339,6 +339,7 @@
 
   #current-cont {
     width: 95%;
+    text-align: left;
     /* border: 1px solid black; */
 
     h2 {
@@ -419,7 +420,7 @@
       overflow-x: scroll;
       width: 100%;
 
-      .each-hour {
+      .each-hour, .each-day {
         flex-shrink: 0;
         display: flex;
         flex-direction: column;

@@ -132,8 +132,7 @@ function selectLocation(event, statusStateSetter, loadingStatusStateSetter, navi
     const url = 'https://api.open-meteo.com/v1/forecast?';
     const daily = 'weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,uv_index_max,precipitation_sum,rain_sum,wind_speed_10m_max,sunrise,sunset,precipitation_hours,precipitation_probability_max,sunshine_duration,daylight_duration';
     const hourly = 'temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,apparent_temperature,precipitation_probability,precipitation,visibility,surface_pressure,dew_point_2m,rain,cloud_cover,uv_index';
-    const current = 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&timezone=auto';
-    const timeFormat = 'unixtime';
+    const current = 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,precipitation_probability,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&timezone=auto';
     const params = new URLSearchParams(
       `latitude=${selectedCoordinates.lat}&longitude=${selectedCoordinates.lng}&daily=${daily}&hourly=${hourly}&current=${current}`
     );

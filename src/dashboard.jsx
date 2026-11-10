@@ -165,7 +165,7 @@ async function updateWeatherReport(searchStateSetter, statusStateSetter, selecte
   const url = 'https://api.open-meteo.com/v1/forecast?';
   const daily = 'weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,uv_index_max,precipitation_sum,rain_sum,wind_speed_10m_max,sunrise,sunset,precipitation_hours,precipitation_probability_max,sunshine_duration,daylight_duration';
   const hourly = 'temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,apparent_temperature,precipitation_probability,precipitation,visibility,surface_pressure,dew_point_2m,rain,cloud_cover,uv_index';
-  const current = 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&timezone=auto';
+  const current = 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,precipitation_probability,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&timezone=auto';
   const params = new URLSearchParams(
     `latitude=${selectedLocationObj[0].latitude}&longitude=${selectedLocationObj[0].longitude}&daily=${daily}&hourly=${hourly}&current=${current}`
   );
@@ -255,6 +255,37 @@ function WeatherSummary({ selectedLocation, weatherData }) {
   const { time: timeNow, weather_code: weatherCode, is_day: isDay, temperature_2m: temperature, apparent_temperature: apparentTemperature } = weatherData.current;
   const { temperature_2m: temperatureUnit, apparent_temperature: apparentTemperatureUnit } = weatherData.current_units;
   const { timezone } = weatherData;
+  const weatherCodeMeanings = {
+    "0": "Clear sky",
+    "1": "Mainly clear",
+    "2": "Partly cloudy",
+    "3": "Overcast",
+    "45": "Fog",
+    "48": "Depositing rime fog",
+    "51": "Light drizzle",
+    "53": "Moderate drizzle",
+    "55": "Dense drizzle",
+    "56": "Light freezing drizzle",
+    "57": "Dense freezing drizzle",
+    "61": "Slight rain",
+    "63": "Moderate rain",
+    "65": "Heavy rain",
+    "66": "Light freezing rain",
+    "67": "Heavy freezing rain",
+    "71": "Slight snowfall",
+    "73": "Moderate snowfall",
+    "75": "Heavy snowfall",
+    "77": "Snow grains",
+    "80": "Slight rain showers",
+    "81": "Moderate rain showers",
+    "82": "Violent rain showers",
+    "85": "Slight snow showers",
+    "86": "Heavy snow showers",
+    "95": "Thunderstorm",
+    "96": "Thunderstorm with slight hail",
+    "97": "Heavy thunderstorm",
+    "99": "Thunderstorm with heavy hail"
+  }
   const formattedDate = new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "long",
@@ -295,14 +326,7 @@ function WeatherSummary({ selectedLocation, weatherData }) {
           <h1 id='temperature'>{`${Number(temperature).toFixed() + temperatureUnit}`}</h1>
         </div>
         <p id='weather-condition'>
-          {weatherCode === 0 ? 'Clear sky' : weatherCode === 1 ? 'Sky mainly clear' : 
-          weatherCode === 2 ? 'Partly cloudy' : weatherCode === 3 ? 'Cloudy' : weatherCode === 45 ? 'Fog' : weatherCode === 48 ? 'Depositing rime fog' : 
-          weatherCode === 51 ? 'Light drizzle' : weatherCode === 53 ? 'Moderate drizzle' : weatherCode === 55 ? 'Dense drizzle' : weatherCode === 56 ? 'Light freezing drizzle' : 
-          weatherCode === 57 ? 'Dense freezing drizzle' : weatherCode === 61 ? 'Slight rain' : weatherCode === 63 ? 'Moderate rain' : weatherCode === 65 ? 'Heavy rain' : 
-          weatherCode === 66 ? 'Light freezing rain' : weatherCode === 67 ? 'Heavy freezing rain' : weatherCode === 71 ? 'Slight snowfall' : weatherCode === 73 ? 'Moderate snowfall' : 
-          weatherCode === 75 ? 'Heavy snowfall' : weatherCode === 77 ? 'Snow grains' : weatherCode === 80 ? 'Slight rain showers' : weatherCode === 81 ? 'Moderate rain showers' : 
-          weatherCode === 82 ? 'Violent rain showers' : weatherCode === 85 ? 'Slight snow showers' : weatherCode === 86 ? 'Heavy snow showers' : weatherCode === 95 ? 'Thunderstorm' : 
-          weatherCode === 96 ? 'Thunderstorm with slight hail' : weatherCode === 97 ? 'Heavy thunderstorm' : weatherCode === 99 ? 'Thunderstorm with heavy hail' : ''}
+          {weatherCodeMeanings[weatherCode]}
         </p>
         <p id='feel-temp'> Currently feels like {`${Number(apparentTemperature).toFixed() + apparentTemperatureUnit}`}</p>
       </div>
@@ -366,11 +390,12 @@ function Current({ weatherData }) {
 }
 function Forecast({ weatherData }) {
   const [forecast, setForecast] = useState('hourly');
-  const { utc_offset_seconds: utcOffsetSeconds } = weatherData;
+  const { timezone } = weatherData;
   const { time: hourlyResponseDates, temperature_2m: hourlyTemperatures, weather_code: hourlyWeatherCodes } = weatherData.hourly;
   const { temperature_2m: hourlyTemperatureUnit } = weatherData.hourly_units;
-  const { time: dailyResponseDates, temperature_2m: dailyTemperatures, weather_code: dailyWeatherCodes } = weatherData.daily;
-  const { temperature_2m: dailyTemperatureUnit } = weatherData.daily_units;
+  const { time: dailyResponseDates, temperature_2m_max: dailyTemperaturesMax, temperature_2m_min: dailyTemperaturesMin, weather_code: dailyWeatherCodes, precipitation_probability_max: dailyPrecipitationProbability } = weatherData.daily;
+  const { precipitation_probability_max: dailyPrecipitationProbabilityUnit } = weatherData.daily_units;
+  const { temperature_2m_max: dailyTemperatureUnit } = weatherData.daily_units;
   const weatherCodeMeanings = {
     "0": "Clear sky",
     "1": "Mainly clear",
@@ -402,7 +427,6 @@ function Forecast({ weatherData }) {
     "97": "Heavy thunderstorm",
     "99": "Thunderstorm with heavy hail"
   }
-  const { timezone } = weatherData;
   const timee = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
     year: "numeric",
@@ -415,8 +439,8 @@ function Forecast({ weatherData }) {
   const formattedJsMonth = timee.format(new Date()).substring(0, 2);
   const formattedJsDay = timee.format(new Date()).substring(3, 5);
   const formattedJsHour = timee.format(new Date()).substring(12, 14);
-  function getFormated24Hour(time) {
-    const formattedAPIHour = new Date(time).toLocaleDateString("en-US", {
+  function getFormated24Hour(date) {
+    const formattedAPIDate = new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -425,18 +449,30 @@ function Forecast({ weatherData }) {
       hourCycle: "h23"
     });
     return { 
-      all: formattedAPIHour,
-      year: Number(formattedAPIHour.substring(5, 9)),
-      month: Number(formattedAPIHour.substring(0, 2)),
-      day: Number(formattedAPIHour.length === 16 ? formattedAPIHour.substring(3, 4) : formattedAPIHour.substring(3, 5)),
-      hour: Number(formattedAPIHour.substring(12, 14))
+      all: formattedAPIDate,
+      year: Number(formattedAPIDate.substring(5, 9)),
+      month: Number(formattedAPIDate.substring(0, 2)),
+      day: Number(formattedAPIDate.substring(3, 5)),
+      hour: Number(formattedAPIDate.substring(12, 14))
     };
   }
-  function getFormated12Hour(time) {
-    const formattedHour = new Date(time).toLocaleDateString("en-US", {
+  function getFormated12Hour(date) {
+    const formattedHour = new Date(date).toLocaleDateString("en-US", {
       hour: "numeric"
     });
     return formattedHour.substring(11)
+  }
+  function getDay(date) {
+    const formattedAPIDate = new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      weekday: "short",
+      hour: "2-digit",
+      minute: "numeric",
+      hourCycle: "h23"
+    });
+    return formattedAPIDate;
   }
   const hourlyResponseDatesArr = [];
   const hourlyWeatherCodesArr = [];
@@ -458,6 +494,9 @@ function Forecast({ weatherData }) {
       }
     }
   })
+  // console.log(getDay(dailyResponseDates[0]));
+  // console.log(getDay(dailyResponseDates[0]).substring(0, 17));
+  // console.log(dailyResponseDates[0].substring(8));
   function toggleForecastView(e) {
     e.stopPropagation();
     if (forecast === 'hourly' && e.target.className !== 'in-view') {
@@ -473,19 +512,19 @@ function Forecast({ weatherData }) {
       <div id='titles-cont'>
         <div id='titles-inner-cont'>
           <h2>Forecast</h2>
-          <p>See the weather for the hours ahead or the coming days</p>
+          <p>See forecasts for the {forecast === 'hourly' ? 'next 24 hours' : 'coming days'}</p>
         </div>
         <div id='forecast-toggle'>
           <p id='hourly' className={forecast === 'hourly' ? 'in-view' : ''} onClick={(e) => toggleForecastView(e)}>Hourly</p>
           <p id='daily' className={forecast === 'daily' ? 'in-view' : ''} onClick={(e) => toggleForecastView(e)}>Daily</p>
         </div>
       </div>
-      {/* <hr style={{width: '100%', marginTop: '10px', marginBottom: '16px'}} /> */}
       {forecast === 'hourly' ? <Hourly hourlyTemperatureUnit={hourlyTemperatureUnit} hourlyWeatherCodesArr={hourlyWeatherCodesArr} hourlyTemperaturesArr={hourlyTemperaturesArr} 
         hourlyResponseDatesArr={hourlyResponseDatesArr} weatherCodeMeanings={weatherCodeMeanings}formattedJsHour={formattedJsHour} formattedJsDay={formattedJsDay} formattedJsMonth={formattedJsMonth} 
         getFormated12Hour={getFormated12Hour} getFormated24Hour={getFormated24Hour} /> :
-        <Daily dailyTemperatureUnit={dailyTemperatureUnit} dailyWeatherCodesArr={dailyWeatherCodesArr} dailyTemperaturesArr={dailyTemperaturesArr} dailyResponseDatesArr={dailyResponseDatesArr} 
-        weatherCodeMeanings={weatherCodeMeanings} /> 
+        <Daily dailyTemperatureUnit={dailyTemperatureUnit} dailyResponseDates={dailyResponseDates} dailyTemperaturesMin={dailyTemperaturesMin} dailyTemperaturesMax={dailyTemperaturesMax}
+        dailyWeatherCodes={dailyWeatherCodes} weatherCodeMeanings={weatherCodeMeanings} getDay={getDay} dailyPrecipitationProbability={dailyPrecipitationProbability} 
+        dailyPrecipitationProbabilityMax={dailyPrecipitationProbabilityUnit} />
       }
     </div>
   )
@@ -532,9 +571,39 @@ function Hourly({ hourlyTemperatureUnit, hourlyWeatherCodesArr, hourlyTemperatur
     </div>
   )
 }
-function Daily({ temperatureUnit, weatherCodesArr, temperatureArr, responseDatesArr, weatherCodeMeanings }) {
+function Daily({ dailyTemperatureUnit, dailyResponseDates, dailyTemperaturesMin, dailyTemperaturesMax, dailyWeatherCodes, weatherCodeMeanings, getDay, dailyPrecipitationProbability, dailyPrecipitationProbabilityMax }) {
   return (
-    <div id='forecast-info'></div>
+    <div id='forecast-info'>
+      {dailyResponseDates.map((eachDate, index) => {
+        const displayedDate = getDay(eachDate).substring(0, 17);
+        return displayedDate !== null ? 
+          <div key={index} className='each-day'>
+            <p><b>{displayedDate}</b></p>
+            <div id='forecast-icon'>
+              <i className={`fa-solid fa-${
+                (dailyWeatherCodes[index] === 0 || dailyWeatherCodes[index] === 1) ? 'cloud-sun' : 
+                dailyWeatherCodes[index] === 2 ? 'cloud-sun' : dailyWeatherCodes[index] === 3 ? 'cloud' : dailyWeatherCodes[index] === 45 || dailyWeatherCodes[index] === 48 ? 'smog' : 
+                (dailyWeatherCodes[index] === 51 || dailyWeatherCodes[index] === 53 || dailyWeatherCodes[index] === 56 || dailyWeatherCodes[index] === 66) ? 'cloud-sun-rain' : 
+                (dailyWeatherCodes[index] === 51 || dailyWeatherCodes[index] === 53 || dailyWeatherCodes[index] === 56 || dailyWeatherCodes[index] === 66) ? 'cloud-rain' : 
+                (dailyWeatherCodes[index] === 51 || dailyWeatherCodes[index] === 53 || dailyWeatherCodes[index] === 56 || dailyWeatherCodes[index] === 66) ? 'cloud-moon-rain' : 
+                [55, 57, 61, 63, 80].includes(dailyWeatherCodes[index]) ? 'cloud-rain' : 
+                [65, 67, 81, 82].includes(dailyWeatherCodes[index]) ? 'cloud-showers-heavy' : 
+                [95, 96, 97, 99].includes(dailyWeatherCodes[index]) ? 'cloud-bolt' : 
+                [71, 73, 75, 77, 85, 86].includes(dailyWeatherCodes[index]) ? 'cloud-showers-heavy' : ''
+              } hourly-forecast`} style={{color: 
+                `${[51, 53, 55, 56, 57].includes(dailyWeatherCodes[index]) ? '#90CAF9' : 
+                [61, 62, 66, 80].includes(dailyWeatherCodes[index]) ? '#64B5F6' : 
+                [65, 67, 82].includes(dailyWeatherCodes[index]) ? '#64B5F6' : 
+                [95, 96, 97, 99].includes(dailyWeatherCodes[index]) ? '#1E88E5' : ''}`
+              }}></i>
+            </div>
+            <h4>{dailyTemperaturesMin[index] + dailyTemperatureUnit} / {dailyTemperaturesMax[index] + dailyTemperatureUnit}</h4>
+            <p>{weatherCodeMeanings[dailyWeatherCodes[index]]}</p>
+            <p>{dailyPrecipitationProbability[index] + dailyPrecipitationProbabilityMax} chance of rain</p>
+          </div>
+          : null
+      })}
+    </div>
   )
 }
 
