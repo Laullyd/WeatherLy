@@ -575,8 +575,8 @@ function Daily({ dailyTemperatureUnit, dailyResponseDates, dailyTemperaturesMin,
   return (
     <div id='forecast-info'>
       {dailyResponseDates.map((eachDate, index) => {
-        const displayedDate = getDay(eachDate).substring(0, 17);
-        return displayedDate !== null ? 
+        const displayedDate = getDay(eachDate).substring(0, 11);
+        return index > 0 && displayedDate !== null ? 
           <div key={index} className='each-day'>
             <p><b>{displayedDate}</b></p>
             <div id='forecast-icon'>
@@ -598,8 +598,8 @@ function Daily({ dailyTemperatureUnit, dailyResponseDates, dailyTemperaturesMin,
               }}></i>
             </div>
             <h4>{dailyTemperaturesMin[index] + dailyTemperatureUnit} / {dailyTemperaturesMax[index] + dailyTemperatureUnit}</h4>
-            <p>{weatherCodeMeanings[dailyWeatherCodes[index]]}</p>
-            <p>{dailyPrecipitationProbability[index] + dailyPrecipitationProbabilityMax} chance of rain</p>
+            <p className='weather-meanings'>{weatherCodeMeanings[dailyWeatherCodes[index]]}</p>
+            <p className='precipitation-chance'><small>{dailyPrecipitationProbability[index] + dailyPrecipitationProbabilityMax} chance of rain</small></p>
           </div>
           : null
       })}

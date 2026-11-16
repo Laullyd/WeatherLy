@@ -50,14 +50,14 @@ function search(validState, searchedState, searchStateSetter, loadingStatusState
   const params = new URLSearchParams(`name=${cityInput}&count=100`);
   const url = 'https://geocoding-api.open-meteo.com/v1/search?';
   if (!cityInput) {
-    return Promise.resolve({ status: 'skipped' });
+    return Promise.resolve({ status: 'skipped', message: 'No input!' });
   }
   if (searchedState !== 'not-searched' && loadingStatusState !== 'locations-loading') {
-    return Promise.resolve({ status: 'skipped' });
+    return Promise.resolve({ status: 'skipped', message: 'Searched-state is not-searched' });
   }
   if (!validState) {
     console.log('Inputed symbols are not allowed!');
-    return Promise.resolve({ status: 'skipped' });
+    return Promise.resolve({ status: 'skipped', message: 'Invalid input!' });
   }
   if (searchedState !== 'searched') {
     searchStateSetter('searched');
@@ -210,7 +210,7 @@ function WelcomeInterface({ searchStateSetter, statusStateSetter, searchedState,
     search(validState, searchedState, searchStateSetter, loadingStatusState)
     .then(outcome => {
       if (outcome.status === 'skipped') {
-        console.log('One of the conditions failed!');
+        console.log(outcome.message);
         return;
       }
       updateStates(outcome, statusStateSetter);

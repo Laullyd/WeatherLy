@@ -449,6 +449,12 @@
         .fa-cloud-moon {
           color: #7986CB;
         }
+        .weather-meanings {
+          margin-bottom: 20px;
+        }
+        .precipitation-chance {
+          margin-right: 80px;
+        }
       }
     }
   }
