@@ -47,9 +47,9 @@ function WeatherDashboard() {
 
   useEffect(() => {
     const loadNote = () => {
-      // setTimeout(() => {
-      //   setDashNoteState('note');
-      // }, 5000);
+      setTimeout(() => {
+        setDashNoteState('note');
+      }, 5000);
     }
     document.onload = loadNote();
     return () => document.removeEventListener('load', loadNote);
@@ -161,6 +161,7 @@ function WeatherDashboard() {
 }
 async function updateWeatherReport(searchStateSetter, statusStateSetter, selectedLocationObj, weatherDataSetter, navigate) {
   searchStateSetter('reloading');
+  sessionStorage.setItem('selectedLocationObj', JSON.stringify(selectedLocationObj));
   const weatherReqController = new AbortController();
   const url = 'https://api.open-meteo.com/v1/forecast?';
   const daily = 'weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,uv_index_max,precipitation_sum,rain_sum,wind_speed_10m_max,sunrise,sunset,precipitation_hours,precipitation_probability_max,sunshine_duration,daylight_duration';
@@ -194,17 +195,17 @@ async function updateWeatherReport(searchStateSetter, statusStateSetter, selecte
     });
     weatherDataSetter(newWeatherData);
     searchStateSetter('not-searched');
+    sessionStorage.clear();
   } catch(error) {
     searchStateSetter('searched');
     if (error.message === 'Could not get weather info') {
       statusStateSetter('weather-info-not-retreived');
     } else if (error.message === 'Failed to fetch') {
-      statusStateSetter('network-connection-error');
+      statusStateSetter('network-connection-error-weather');
     } else {
-      statusStateSetter('error-getting-locations');
+      statusStateSetter('error-updating-weather');
     }
     console.error(error.message);
-    throw error;
   };
 }
 function resetStatesToDasnboard(noteStateSetter) {
@@ -494,9 +495,6 @@ function Forecast({ weatherData }) {
       }
     }
   })
-  // console.log(getDay(dailyResponseDates[0]));
-  // console.log(getDay(dailyResponseDates[0]).substring(0, 17));
-  // console.log(dailyResponseDates[0].substring(8));
   function toggleForecastView(e) {
     e.stopPropagation();
     if (forecast === 'hourly' && e.target.className !== 'in-view') {
@@ -522,7 +520,7 @@ function Forecast({ weatherData }) {
       {forecast === 'hourly' ? <Hourly hourlyTemperatureUnit={hourlyTemperatureUnit} hourlyWeatherCodesArr={hourlyWeatherCodesArr} hourlyTemperaturesArr={hourlyTemperaturesArr} 
         hourlyResponseDatesArr={hourlyResponseDatesArr} weatherCodeMeanings={weatherCodeMeanings}formattedJsHour={formattedJsHour} formattedJsDay={formattedJsDay} formattedJsMonth={formattedJsMonth} 
         getFormated12Hour={getFormated12Hour} getFormated24Hour={getFormated24Hour} /> :
-        <Daily dailyTemperatureUnit={dailyTemperatureUnit} dailyResponseDates={dailyResponseDates} dailyTemperaturesMin={dailyTemperaturesMin} dailyTemperaturesMax={dailyTemperaturesMax}
+        <Daily dailyResponseDates={dailyResponseDates} dailyTemperaturesMin={dailyTemperaturesMin} dailyTemperaturesMax={dailyTemperaturesMax}
         dailyWeatherCodes={dailyWeatherCodes} weatherCodeMeanings={weatherCodeMeanings} getDay={getDay} dailyPrecipitationProbability={dailyPrecipitationProbability} 
         dailyPrecipitationProbabilityMax={dailyPrecipitationProbabilityUnit} />
       }
@@ -571,7 +569,7 @@ function Hourly({ hourlyTemperatureUnit, hourlyWeatherCodesArr, hourlyTemperatur
     </div>
   )
 }
-function Daily({ dailyTemperatureUnit, dailyResponseDates, dailyTemperaturesMin, dailyTemperaturesMax, dailyWeatherCodes, weatherCodeMeanings, getDay, dailyPrecipitationProbability, dailyPrecipitationProbabilityMax }) {
+function Daily({ dailyResponseDates, dailyTemperaturesMin, dailyTemperaturesMax, dailyWeatherCodes, weatherCodeMeanings, getDay, dailyPrecipitationProbability, dailyPrecipitationProbabilityMax }) {
   return (
     <div id='forecast-info'>
       {dailyResponseDates.map((eachDate, index) => {
@@ -597,7 +595,7 @@ function Daily({ dailyTemperatureUnit, dailyResponseDates, dailyTemperaturesMin,
                 [95, 96, 97, 99].includes(dailyWeatherCodes[index]) ? '#1E88E5' : ''}`
               }}></i>
             </div>
-            <h4>{dailyTemperaturesMin[index] + dailyTemperatureUnit} / {dailyTemperaturesMax[index] + dailyTemperatureUnit}</h4>
+            <h4>{dailyTemperaturesMin[index] + '°'} / {dailyTemperaturesMax[index] + '°'}</h4>
             <p className='weather-meanings'>{weatherCodeMeanings[dailyWeatherCodes[index]]}</p>
             <p className='precipitation-chance'><small>{dailyPrecipitationProbability[index] + dailyPrecipitationProbabilityMax} chance of rain</small></p>
           </div>
@@ -608,3 +606,4 @@ function Daily({ dailyTemperatureUnit, dailyResponseDates, dailyTemperaturesMin,
 }
 
 export default WeatherDashboard;
+export { updateWeatherReport }

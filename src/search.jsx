@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router";
 import { useState, useEffect } from 'react'
+import { updateWeatherReport } from "./dashboard.jsx";
 
 let locationList;
 let selectedLocation;
@@ -407,17 +408,26 @@ function NoResults({ searchStateSetter, statusStateSetter, statusState, loadingS
         {(statusState !== 'locations-not-found' || statusState !== 'weather-info-not-retreived') && <button id="retry" 
           onClick={() => {
             if (statusState === 'network-connection-error-locations' || statusState === 'error-getting-locations') {
-              // console.log('works');
               statusStateSetter('loading');
               search(validState, searchedState, searchStateSetter, loadingStatusState)
               .then(outcome => {
                 if (outcome.status === 'skipped') return;
-                // console.log('works');
                 updateStates(outcome, statusStateSetter);
               })
-              // console.log('works');
-            } else if (statusState === 'network-connection-error-weather' || statusState === 'error-getting-weather') { 
-              fetchWeather(statusStateSetter, loadingStatusStateSetter, navigate, weatherDataSetter, selectedLocationSetter, searchStateSetter);
+            } else if (statusState === 'network-connection-error-weather' || statusState === 'error-getting-weather') {
+              console.log('works');
+              // console.log(fetchWeather);
+              const currentRoute = window.location.pathname;
+              if (currentRoute === '/Weatherly/') {
+                fetchWeather(statusStateSetter, loadingStatusStateSetter, navigate, weatherDataSetter, selectedLocationSetter, searchStateSetter);
+              } else {
+                const selectedLocationObj = JSON.parse(sessionStorage.getItem('selectedLocationObj'));
+                if (selectedLocationObj) {
+                  updateWeatherReport(searchStateSetter, statusStateSetter, selectedLocationObj, weatherDataSetter, navigate);
+                } else {
+                  fetchWeather(statusStateSetter, loadingStatusStateSetter, navigate, weatherDataSetter, selectedLocationSetter, searchStateSetter);
+                }
+              }
             }
           }}>Retry</button>}
       </div>
